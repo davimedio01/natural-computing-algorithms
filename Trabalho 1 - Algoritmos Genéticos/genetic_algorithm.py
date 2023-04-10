@@ -485,20 +485,6 @@ def tournament_selection(cur_population: np.ndarray, all_fitness: np.ndarray, si
 #           2 - Reprodução             #
 ########################################
 
-# Elitismo
-def select_elite(selected_population: np.ndarray, all_fitness: np.ndarray, elitism_size=3):
-    """Função para aplicar o elitismo, a partir de uma população selecionada.
-
-    Args:
-        selected_population: vetor com a população selecionada
-        all_fitness: vetor contendo o valor das aptidões obtidas com a seleção
-        elitism_size: quantidade de indivíduos para elite (padrão: 3)
-        
-    Returns:
-        elitism: vetor representando a população elitista
-    """
-
-
 # Crossover
 def crossover(parent1: np.ndarray, parent2: np.ndarray, crossover_rate=0.8):
     """Aplicação de crossover entre dois indivíduos.
@@ -529,9 +515,8 @@ def crossover(parent1: np.ndarray, parent2: np.ndarray, crossover_rate=0.8):
 
     return child1, child2
 
+
 # Mutação
-
-
 def mutation(individual: np.ndarray, mutation_rate=0.2):
     """Aplicação de mutação em um indivíduo.
 
@@ -606,6 +591,7 @@ def make_sex_without_wife(selected_population: np.ndarray, all_fitness: np.ndarr
         new_population = np.append(new_population, [selected_population[-1]], axis=0)         
 
     return new_population
+
 
 ########################################
 #         X - Função Principal         #
