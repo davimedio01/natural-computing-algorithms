@@ -14,35 +14,10 @@ import matplotlib.pyplot as plt  # Plotar Gráficos
 #              Funções de Avaliação                 #
 #####################################################
 
-# Função do Exercício 01: Aptidão bitstring [1 1 1 1 0 1 1 0 1 1 1 1]
-def f1_fitness(individual_bitstring):
-    """Função de Aptidão representado 
-    pela bitstring [1 1 1 1 0 1 1 0 1 1 1 1].
-
-    Args:
-        individual_bitstring: vetor de bitstring do indivíduo
-        
-    Returns:
-        hamming_dist: valor da aptidão baseado na distância de Hamming
-    """
-    
-    # Criação da bitstring de verificação do exercício 01
-    default_bitstring = np.array([1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1])
-
-    # Calculo da Distância de Hamming para encontrar o valor total da aptidão para bit 0
-    hamming_dist = np.sum(individual_bitstring != default_bitstring)
-
-    return hamming_dist
-
-
 # Função do Exercício 02
 def f2(x):
-    return np.power(2, -2 * ((x - 0.1)/0.9) ** 2) * np.sin(5 * np.pi * x) ** 6
-
-
-# Função do Exercício 03
-def f3(x, y):
-    return (1 - x) ** 2 + 100 * (y - (x ** 2)) ** 2
+    #return np.power(2, -2 * ((x - 0.1)/0.9) ** 2) * np.sin(5 * np.pi * x) ** 6
+    return (2 ** (-2 * (((x - 0.1) / 0.9) ** 2))) * ((np.sin(5 * np.pi * x)) ** 6)
 
 
 #####################################################
@@ -50,7 +25,7 @@ def f3(x, y):
 #####################################################
 
 # Subida da Colina
-def hill_climbing(func, target_value: float, is_min: bool, x_min=-10.0, x_max=10.0, step_size=0.1, num_steps=1000):
+def hill_climbing(func, target_value: float, is_min: bool, x_min=-1.0, x_max=1.0, step_size=0.1, num_steps=1000):
     """Aplicação do algoritmo "Subida da Colina",
     em sua versão padrão, para busca local em uma função.
     Utiliza, neste caso, apenas UM PONTO da função.\n
@@ -71,6 +46,7 @@ def hill_climbing(func, target_value: float, is_min: bool, x_min=-10.0, x_max=10
     Returns:
         current_x: mínimo/máximo local encontrado
         func(current_x): valor da função no mínimo/máximo local encontrado
+        step: número de passos necessários
     """
 
     print(f"{'-'*50}")
@@ -113,13 +89,13 @@ def hill_climbing(func, target_value: float, is_min: bool, x_min=-10.0, x_max=10
 
         # Aumenta o número da iteração
         step = step + 1
-    print(step)
+    
     # Retorno do melhor ponto encontrado
-    return current_x, func(current_x)
+    return current_x, func(current_x), (step - 1)
 
 
 # Subida da Colina Iterativo
-def iterated_hill_climbing(func, num_points: int, target_value: float, is_min: bool, x_min=-10.0, x_max=10.0, step_size=0.1, num_steps=1000):
+def iterated_hill_climbing(func, num_points: int, target_value: float, is_min: bool, x_min=-1.0, x_max=1.0, step_size=0.1, num_steps=1000):
     """Aplicação do algoritmo "Subida da Colina",
     em sua versão iterativa, para busca local em uma função.
     Utiliza, neste caso, VÁRIOS PONTOS da função.\n
@@ -128,7 +104,7 @@ def iterated_hill_climbing(func, num_points: int, target_value: float, is_min: b
 
     Args:
         func: função de avaliação
-        n_start: número de pontos iniciais para aplicar no algoritmo padrão
+        num_points: número de pontos iniciais para aplicar no algoritmo padrão
         target_value: valor alvo estipulado para função de avaliação 
         is_min: booleana para atribuir algoritmo para min/max (padrão: True)
             -> Se 'True', irá verificar minimização\n
@@ -142,6 +118,7 @@ def iterated_hill_climbing(func, num_points: int, target_value: float, is_min: b
     Returns:
         best_x: melhor mínimo/máximo local encontrado
         func(best_x): valor da função no melhor mínimo/máximo local encontrado
+        step: número de passos necessários
     """
 
     print(f"{'-'*50}")
@@ -151,9 +128,6 @@ def iterated_hill_climbing(func, num_points: int, target_value: float, is_min: b
     # Inicialização das variáveis para melhor valor encontrado
     best_x = None
     best_func = None
-
-    # Geração de pontos aleatórios, com base na quantidade desejada
-    # start_points = np.random.uniform(x_min, x_max, num_points)
 
     # Realizando os passos iterativos
     point = 1
@@ -216,11 +190,11 @@ def iterated_hill_climbing(func, num_points: int, target_value: float, is_min: b
         point = point + 1
     print(point)
     # Retorno do melhor ponto encontrado
-    return best_x, func(best_x)
+    return best_x, func(best_x), (step - 1)
 
 
 # Subida da Colina Probabilístico
-def stochastic_hill_climbing(func, target_value: float, is_min: bool, x_min=-10.0, x_max=10.0, step_size=0.1, num_steps=1000, t_exp=0.01):
+def stochastic_hill_climbing(func, target_value: float, is_min: bool, x_min=-1.0, x_max=1.0, step_size=0.1, num_steps=1000, t_exp=0.01):
     """Aplicação do algoritmo "Subida da Colina",
     em sua versão probabilística, para busca local em uma função.
     Utiliza, neste caso, apenas UM PONTO da função.\n
@@ -244,6 +218,7 @@ def stochastic_hill_climbing(func, target_value: float, is_min: bool, x_min=-10.
     Returns:
         current_x: mínimo/máximo local encontrado
         func(current_x): valor da função no mínimo/máximo local encontrado
+        step: número de passos necessários
     """
 
     print(f"{'-'*50}")
@@ -298,13 +273,13 @@ def stochastic_hill_climbing(func, target_value: float, is_min: bool, x_min=-10.
 
         # Aumenta o número da iteração
         step = step + 1
-    print(step)
+    
     # Retorno do melhor ponto encontrado
-    return current_x, func(current_x)
+    return current_x, func(current_x), (step - 1)
 
 
 # Recozimento Simulado
-def simulated_annealing(func, target_value: float, is_min: bool, x_min=-10.0, x_max=10.0, step_size=0.1, num_steps=1000, t_initial=0.01, beta=0.8):
+def simulated_annealing(func, target_value: float, is_min: bool, x_min=-1.0, x_max=1.0, step_size=0.1, num_steps=1000, t_initial=0.01, beta=0.8):
     """Aplicação do algoritmo "Recozimento Simulado"
     para busca global em uma função.
 
@@ -325,6 +300,7 @@ def simulated_annealing(func, target_value: float, is_min: bool, x_min=-10.0, x_
     Returns:
         current_x: melhor mínimo/máximo global encontrado
         func(current_x): valor da função no melhor mínimo/máximo global encontrado
+        step: número de passos necessários
     """
 
     print(f"{'-'*50}")
@@ -364,7 +340,7 @@ def simulated_annealing(func, target_value: float, is_min: bool, x_min=-10.0, x_
         # Maximização
         else:
             # Calcula a probabilidade P do método
-            #prob = (1 / (1 + np.exp((current_func - neighbor_func) / (t_actual + 1e-8))))
+            # prob = (1 / (1 + np.exp((current_func - neighbor_func) / (t_actual + 1e-8))))
             prob = np.exp((current_func - neighbor_func) / (t_actual + 1e-8))
 
             # Caso o resultado seja melhor que o atual
@@ -379,10 +355,99 @@ def simulated_annealing(func, target_value: float, is_min: bool, x_min=-10.0, x_
 
         # Aumenta o número da iteração
         step = step + 1
-    print(step)
+    
     # Retorno do melhor ponto encontrado
-    return current_x, func(current_x)
+    return current_x, func(current_x), (step - 1)
 
+
+#####################################################
+#               Conversão Bitstring                 #
+#####################################################
+
+# Float 32bit para Binário
+def float_to_binary(value: float, int_digits=15, dec_digits=15):
+    """Função responsável por converter um valor,
+    em float 32 bit, para representação binária,
+    com número máximo de casas inteiras e decimas.
+
+    Args:       
+        value: número em float máximo 32 bit
+        int_digits: quantidade máxima de dígitos na parte inteira (padrão: 15)
+        dec_digits: quantidade máxima de dígitos na parte decimal (padrão: 15)
+        
+    Returns:
+        binary: número convertido em binário
+    """
+
+    # Separar a parte inteira da decimal
+    signal = '1' if value < 0 else '0'
+    int_part = abs(int(value))
+    dec_part = abs(value) - int_part
+    #print(int_part, value, dec_part)
+    
+    # Converter a parte inteira para binário, completando com zero à esquerda
+    int_str = np.binary_repr(int_part).zfill(int_digits)
+    
+    # Conversão da parte decimal para binário, completando com zeros à direita
+    dec_str = ""
+    for i in range(dec_digits):
+        # Realiza a potência de 2
+        dec_part *= 2
+        
+        # Caso tenha ficado parte inteira, acrescenta "1"
+        if dec_part >= 1:
+            dec_str += "1"
+            dec_part -= 1
+        # Caso não tenha ficado parte inteira, acrescenta "0"
+        else:
+            dec_str += "0"
+    
+    # Salvando o resultado e retornando
+        # Como há a limitância de dígitos, não acrescentar "."
+    binary = signal + int_str + dec_str
+    #print(signal, int_str, '.', dec_str)
+
+    return np.array(list(binary), dtype=np.uint8)
+
+
+# Binário para Float 32bit
+def binary_to_float(value: np.ndarray, int_digits=15, dec_digits=15):
+    """Função responsável por converter um valor,
+    em representação binária, para float 32 bit,
+    com número máximo de casas inteiras e decimas.
+
+    Args:       
+        value: número em representação binára 
+        int_digits: quantidade máxima de dígitos na parte inteira (padrão: 15)
+        dec_digits: quantidade máxima de dígitos na parte decimal (padrão: 15)
+        
+    Returns:
+        float_converted: número convertido em float máximo 32 bit
+    """
+    
+    # Separa a parte inteira da decimal
+    signal, int_str, dec_str = value[0], value[1:int_digits + 1], value[int_digits + 1:]
+    
+    # Convertendo sinal
+    signal_value = (-1) if signal == 1 else (1)
+    
+    # Converter a parte inteira para número
+    int_str = "".join(str(c) for c in int_str)
+    int_num = int(int_str, 2)
+    
+    #print(signal, int_str, '.', "".join(str(c) for c in dec_str))
+    
+    # Converter a parte decimal para número
+    dec_num = 0
+    for i in range(dec_digits):
+        # Aplicando a fórmula inversa da decimal
+        dec_num += int(str(dec_str[i])) * (2 ** -(i + 1))
+        
+    # Recuperando o número float por completo
+    float_converted = signal_value * (int_num + dec_num)
+    
+    return float_converted
+    
 
 #####################################################
 #          Algoritmo Genético: Bitstring            #
@@ -393,16 +458,28 @@ def simulated_annealing(func, target_value: float, is_min: bool, x_min=-10.0, x_
 ########################################
 
 # Geração Aleatória da População
-def generate_population():
+def generate_population(int_size=15, dec_size=15, size_population=10, x_min=-1.0, x_max=1.0):
     """Função responsável por gerar uma nova população,
-    em bitstring (vetor de bits).
+    em bitstring (vetor de bits), advindos do float.
 
-    Args:       
-        
+    Args: 
+        int_size: quantidade máxima de dígitos na parte inteira (padrão: 15)
+        dec_size: quantidade máxima de dígitos na parte decimal (padrão: 15)
+        size_population: tamanho da população (padrão: 10)
+        x_min: valor mínimo do intervalo para geração de número aleatório (padrão: -1.0)
+        x_max: valor máximo do intervalo para geração de número aleatório (padrão: 1.0)
         
     Returns:
-
+        population: população inicial gerada
     """
+    
+    # Geração de Float aleatório
+    individual_vals = np.random.uniform(x_min, x_max, size_population)
+    
+    # Conversão de Float para bitstring e salva como indivíduo
+    population = [float_to_binary(value, int_size, dec_size) for value in individual_vals]
+    
+    return np.array(population)
 
 
 ########################################
@@ -416,8 +493,8 @@ def roulette_selection(cur_population: np.ndarray, all_fitness: np.ndarray, star
     Args:
         cur_population: vetor contendo a população atual para seleção
         all_fitness: vetor contendo todos os valores de aptidão da população
-        start: início exclusivo do intervalo da roleta (padrão: 0)
-        end: fim inclusivo do intervalo da roleta (padrão: 360)
+        start: início inclusivo do intervalo da roleta (padrão: 0)
+        end: fim exclusivo do intervalo da roleta (padrão: 360)
         
     Returns:
         new_population: vetor contendo a nova população selecionada
@@ -426,30 +503,21 @@ def roulette_selection(cur_population: np.ndarray, all_fitness: np.ndarray, star
     # Somar a aptidão de todos indivíduos
     sum_all_fitness = np.sum(all_fitness)
 
-    # Determinar a porção da roleta para cada indivíduo no intervalo (start; end]
-    prob_roulette = start + np.array(((end - start) * all_fitness) / sum_all_fitness)
-
+    # Determinar a porção da roleta para cada indivíduo no intervalo [start; end]
+    prob_roulette = np.array(((end - start) * all_fitness) / (sum_all_fitness + 1e-8))
+    
     # Determinar os intervalos da roleta para cada indivíduo
-    intervals_roulette = np.zeros(np.size(all_fitness) + 1)
-    for i in range(1, len(intervals_roulette)):
-        # Inicia com a segunda posição
-        intervals_roulette[i] = intervals_roulette[i-1] + prob_roulette[i-1]
-
-    # Seleção dos indivíduos com base na roleta
-    new_population = []
-    for i in range(np.size(cur_population)):
-        # Geração do valor aleatório
-        rand_val = np.random.uniform(low=start + 1, high=end + 1)
-
-        # Percorrendo o vetor de intervalos
-        for j in range(len(intervals_roulette) - 1):
-            # Verificando em que posição o valor randômico está inserido
-            if intervals_roulette[j] < rand_val <= intervals_roulette[j + 1]:
-                # Salva o indivíduo no novo vetor de população
-                new_population.append(cur_population[j])
-                break
-
-    return np.array(new_population)
+    intervals_roulette = np.concatenate(([start], np.cumsum(prob_roulette)))
+    intervals_roulette[-1] = end
+    
+    # Geração de valores aleatórios
+    rand_vals = np.random.uniform(
+        low=start, high=end, size=cur_population.shape[0])
+    
+    # Seleção dos indivíduos com base na roleta (índices)
+    idx_selected = np.digitize(rand_vals, intervals_roulette) - 1
+    
+    return cur_population[idx_selected]
 
 
 # Seleção por Torneio
@@ -474,11 +542,11 @@ def tournament_selection(cur_population: np.ndarray, all_fitness: np.ndarray, si
         candidates = np.random.choice(
             cur_population.shape[0], size, replace=False)
 
-        # Escolha do vencedor com base no valor obtido
-        winner = candidates[np.argmax(all_fitness[candidates])]
+        # Escolha do vencedor com base no maior valor obtido
+        winner = np.argmax(all_fitness[candidates])
 
         # Salvando o vencedor na nova população
-        new_population[i] = cur_population[winner]
+        new_population[i] = cur_population[candidates[winner]]
 
     return new_population
 
@@ -504,13 +572,11 @@ def crossover(parent1: np.ndarray, parent2: np.ndarray, crossover_rate=0.8):
     # Para ocorrer o crossover, um número aleatório deve ser menor ou igual a taxa
     if np.random.rand() <= crossover_rate:
         # Sorteia um ponto de corte
-        crossover_point = np.random.randint(1, np.size(parent1) - 1)
+        crossover_point = np.random.randint(0, np.size(parent1))
 
         # Realização do crossover
-        child1 = np.concatenate(
-            (parent1[:crossover_point], parent2[crossover_point:]))
-        child2 = np.concatenate(
-            (parent2[:crossover_point], parent1[crossover_point:]))
+        child1 = np.concatenate((parent1[:crossover_point], parent2[crossover_point:]))
+        child2 = np.concatenate((parent2[:crossover_point], parent1[crossover_point:]))
     else:
         # Não ocorrência de crossover, apenas mantém os pais
         child1, child2 = np.copy(parent1), np.copy(parent2)
@@ -542,13 +608,19 @@ def mutation(individual: np.ndarray, mutation_rate=0.2):
 
 
 # Reprodução
-def reproduction(selected_population: np.ndarray, elitism=True, elite_size=3, crossover_rate=0.8, mutation_rate=0.2):
+def reproduction(
+    selected_population: np.ndarray,
+    elitism=False, 
+    elite_size=3, 
+    crossover_rate=0.8, 
+    mutation_rate=0.2
+):
     """Reprodução de uma determinada população, em bitstring, 
     considerando crossover e mutação.
 
     Args:
         selected_population: vetor com a população selecionada
-        elitism: considerar ou não o elitismo (padrão: True)
+        elitism: considerar ou não o elitismo (padrão: False)
         elite_size: quantidade de indivíduos para elitismo (padrão: 3)
         crossover_rate: taxa de crossover (padrão: 0.8)
         mutation_rate: taxa de mutação (padrão: 0.2)
@@ -556,43 +628,44 @@ def reproduction(selected_population: np.ndarray, elitism=True, elite_size=3, cr
     Returns:
         new_population: vetor com a nova população
     """
+
     
     # Seleção de todos os pais para reprodução
     parents = selected_population
-    
+
     if elitism:
         # Seleção dos indivíduos de elite (últimos 'elite_size' da população previamente ordenada...)
         elite = selected_population[:elite_size]
-    
+
         # Seleção dos indivíduos sem a elite, para geração de filhos
         parents = selected_population[elite_size:]
-    
+
     # Criação de novos indivíduos com crossover e mutação
     children = []
-    for i in range(0, np.size(parents), 2):
+    for i in range(0, parents.shape[0]-1, 2):
         # Percorre a população em dois a dois, selecionando pares contínuos
         parent1, parent2 = parents[i], parents[i + 1]
-        
+
         # Fase de crossover
         child1, child2 = crossover(parent1, parent2, crossover_rate)
-        
+
         # Fase de mutação
         child1 = mutation(child1, mutation_rate)
         child2 = mutation(child2, mutation_rate)
-        
+
         # Adiciona os filhos na nova população
         children.append(child1)
         children.append(child2)
-    
+
     if elitism:
         # Caso o número da população seja ímpar, adiciona o último indivíduo
-        if ((np.size(selected_population) - elite_size) % 2 == 1):
-            children.append(children, [selected_population[-1]], axis=0)         
+        if ((parents.shape[0] - elite_size) % 2 == 1):
+            children.append(parents[-1])
     else:
         # Caso o número da população seja ímpar, adiciona o último indivíduo
-        if (np.size(selected_population) % 2 == 1):
-            children.append(children, [selected_population[-1]], axis=0)
-    
+        if (parents.shape[0] % 2 == 1):
+            children.append(parents[-1])
+
     # Adicionando a elite e os filhos gerados
     new_population = np.concatenate((elite, children)) if elitism else np.array(children)
 
@@ -603,49 +676,182 @@ def reproduction(selected_population: np.ndarray, elitism=True, elite_size=3, cr
 #         3 - Função Principal         #
 ########################################
 
-# Algoritmo Genético
-def genetic_algorithm():
+# Algoritmo Genético, por Seleção da Roleta
+def genetic_algorithm_roulette(
+    initial_population: np.ndarray,
+    fitness_func,
+    target_value: float,
+    int_size=15, 
+    dec_size=15,
+    x_min=-1.0, 
+    x_max=1.0,
+    max_gen=10000,
+    start_roulette=0,
+    end_roulette=360,
+    elitism=False,
+    elite_size=3,
+    crossover_rate=0.8,
+    mutation_rate=0.2
+):
     """Aplicação do Algoritmo Genético, a partir
-    de uma população.
+    de uma população de bitstring. 
+    Uso da Seleção por Roleta.
 
     Args:
-        
-        
+        initial_population: matriz de bitstrings da população inicial
+        fitness_func: função de avaliação de aptidão
+        target_value: valor alvo estipulado para função de avaliação
+        int_size: quantidade máxima de dígitos na parte inteira (padrão: 15)
+        dec_size: quantidade máxima de dígitos na parte decimal (padrão: 15)
+        x_min: valor mínimo do intervalo para geração de número aleatório (padrão: -1.0)
+        x_max: valor máximo do intervalo para geração de número aleatório (padrão: 1.0)
+        max_gen: número máximo de gerações possíveis (padrão: 10000)
+        start_roulette: início exclusivo do intervalo da roleta (padrão: 0)
+        end_roulette: fim inclusivo do intervalo da roleta (padrão: 360)
+        elitism: considerar ou não o elitismo (padrão: False)
+        elite_size: quantidade de indivíduos para elitismo (padrão: 3)
+        crossover_rate: taxa de crossover (padrão: 0.8)
+        mutation_rate: taxa de mutação (padrão: 0.2)
         
     Returns:
-        
+        best_population: matriz com a melhor população obtida
+        best_fitness: matriz contendo as aptidões da melhor população
+        generation: número de gerações decorridas
     """
 
     print(f"{'-'*50}")
-    print(f"{'Algoritmo Genético':^50}")
+    print(f"{'Algoritmo Genético (por Roleta)':^50}")
     print(f"{'-'*50}")
-    
-    
-    
-    
-    
-    #! Antes da Reprodução
-    # Ordenação da população com base na aptidão obtida e do tipo de problema
-    # if is_min:
-    #     selected_population = selected_population[np.argsort(all_fitness)]
-    # else:
-    #     selected_population = selected_population[np.argsort(-all_fitness)]
+
+    # Avaliação da população inicial
+    cur_fitness = np.array([fitness_func((binary_to_float(individual, int_size, dec_size)))
+                           for individual in initial_population])
+    print("PRIMEIRO LIXO", cur_fitness)
+    # Percorrendo as gerações
+    generation = 1
+    cur_population = initial_population
+    while (generation <= max_gen and (target_value not in cur_fitness)):
+        # Fase de Seleção
+        cur_population = roulette_selection(
+            cur_population, cur_fitness, start_roulette, end_roulette)
+
+        # Fase de Reprodução
+        cur_population = reproduction(
+            cur_population, elitism, elite_size, crossover_rate, mutation_rate)
+
+        # Fase de Avaliação
+        cur_fitness = np.array([fitness_func(binary_to_float(individual, int_size, dec_size))
+                               for individual in cur_population])
+
+        # Aumenta o número da geração atual
+        generation = generation + 1
+
+    # Retornando a melhor população
+    best_population = [binary_to_float(individual, int_size, dec_size) for individual in cur_population]
+    best_fitness = cur_fitness
+
+    return best_population, best_fitness, (generation - 1)
 
 
+# Algoritmo Genético, por Seleção do Torneio
+def genetic_algorithm_tournament(
+    initial_population: np.ndarray,
+    fitness_func,
+    target_value: float,
+    int_size=15, 
+    dec_size=15,
+    x_min=-1.0,
+    x_max=1.0,
+    max_gen=10000,
+    size_tournament=3,
+    elitism=False,
+    elite_size=3,
+    crossover_rate=0.8,
+    mutation_rate=0.2
+):
+    """Aplicação do Algoritmo Genético, a partir
+    de uma população de bitstring. 
+    Uso da Seleção do Torneio.
 
-#####################################################
-#           Algoritmo Genético: Float               #
-#####################################################
+    Args:
+        initial_population: matriz de bitstrings da população inicial
+        fitness_func: função de avaliação de aptidão
+        target_value: valor alvo estipulado para função de avaliação
+        int_size: quantidade máxima de dígitos na parte inteira (padrão: 15)
+        dec_size: quantidade máxima de dígitos na parte decimal (padrão: 15)
+        x_min: valor mínimo do intervalo para geração de número aleatório (padrão: -1.0)
+        x_max: valor máximo do intervalo para geração de número aleatório (padrão: 1.0)
+        max_gen: número máximo de gerações possíveis (padrão: 10000)
+        size_tournament: número de indivíduos selecionados aleatóriamente para o torneio (padrão: 3)
+        elitism: considerar ou não o elitismo (padrão: False)
+        elite_size: quantidade de indivíduos para elitismo (padrão: 3)
+        crossover_rate: taxa de crossover (padrão: 0.8)
+        mutation_rate: taxa de mutação (padrão: 0.2)
+        
+    Returns:
+        best_population: matriz com a melhor população obtida
+        best_fitness: matriz contendo as aptidões da melhor população
+        generation: número de gerações decorridas
+    """
+
+    print(f"{'-'*50}")
+    print(f"{'Algoritmo Genético (por Torneio)':^50}")
+    print(f"{'-'*50}")
+
+    # Avaliação da população inicial
+    cur_fitness = np.array([fitness_func(binary_to_float(individual, int_size, dec_size))
+                           for individual in initial_population])
+    print("SEGUNDO LIXO", cur_fitness)
+    # Percorrendo as gerações
+    generation = 1
+    cur_population = initial_population
+    while (generation <= max_gen and (target_value not in cur_fitness)):
+        # Fase de Seleção
+        cur_population = tournament_selection(
+            cur_population, cur_fitness, size_tournament)
+
+        # Fase de Reprodução
+        cur_population = reproduction(
+            cur_population, elitism, elite_size, crossover_rate, mutation_rate)
+
+        # Fase de Avaliação
+        cur_fitness = np.array([fitness_func(binary_to_float(individual, int_size, dec_size))
+                               for individual in cur_population])
+
+        # Aumenta o número da geração atual
+        generation = generation + 1
+
+    # Retornando a melhor população
+    #print(cur_population)
+    best_population = [binary_to_float(
+        individual, int_size, dec_size) for individual in cur_population]
+    best_fitness = cur_fitness
+
+    return best_population, best_fitness, (generation - 1)
 
 
-
+########################################
+#               Testes                 #
+########################################
 
 def main():
     """Função principal do programa
     """
 
-    
+    # Geração da população inicial para os testes'
+    int_size = 25
+    dec_size = 10
+    teste = generate_population(
+        int_size=int_size, dec_size=dec_size, size_population=15, x_min=-1.0, x_max=1.0)
+    print(teste, '\n', teste.shape[0], '\n', len(teste[0]), '\n')
 
+    t1, t2, t3 = genetic_algorithm_roulette(teste, f2, target_value=1, int_size=int_size, dec_size=dec_size)
+    print(t1, '\n', t2, '\n', t3, '\n')
+
+    t1, t2, t3 = genetic_algorithm_tournament(
+        teste, f2, target_value=1, int_size=int_size, dec_size=dec_size)
+    print(t1, '\n', t2, '\n', t3, '\n')
+    
 
 if __name__ == '__main__':
     """Ponto de entrada do programa
@@ -653,3 +859,5 @@ if __name__ == '__main__':
 
     # Chama a função principal
     main()
+
+
