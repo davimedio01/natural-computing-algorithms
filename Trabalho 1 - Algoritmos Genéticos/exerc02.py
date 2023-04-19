@@ -19,425 +19,596 @@ def f2(x: list[float]) -> float:
     return (2 ** (-2 * (((x[0] - 0.1) / 0.9) ** 2))) * ((np.sin(5 * np.pi * x[0])) ** 6)
 
 
-def f3(x: list[float]) -> float:
-    return (1 - x[0]) ** 2 + 100 * (x[1] - (x[0] ** 2)) ** 2
-
-
 #####################################################
 #            Algoritmos Pré-Genéticos               #
 #####################################################
 
 # Subida da Colina
 def hill_climbing(
-    func: callable,
+    fitness_func: callable,
     target_value: float = float('inf'),
     is_min=True,
     bounds=np.array([[-1.0, 1.0]]),
+    max_gen=10000,
+    max_patience=100,
     step_size=0.1,
-    num_steps=1000
 ):
     """Aplicação do algoritmo "Subida da Colina",
-    em sua versão padrão, para busca local em uma função.
-    Utiliza, neste caso, apenas UM PONTO da função.\n
-    Para mais pontos, utilize a "Subida da Colina Iterativa".
-
+    em sua versão padrão, para busca local em uma função multivariável.
+    
     Args:
-        func (callable): função de avaliação
-        target_value (float, opcional): valor alvo estipulado para função de avaliação 
+        fitness_func (callable): função de avaliação de aptidão
+        target_value (float, opcional): valor alvo estipulado para função de avaliação (padrão: infinito)
         is_min (bool): booleana para atribuir algoritmo para min/max (padrão: True)
-            -> Se 'True', irá verificar minimização\n
-            -> Se 'False', irá verificar maximização
+            - Se 'True', irá verificar minimização\n
+            - Se 'False', irá verificar maximização
         bounds (np.ndarray[[float, float], ...]): lista com valores do intervalo da função (padrão: [-1.0 1.0])
+        max_gen (int): número máximo de gerações possíveis (padrão: 10000)
+        max_patience (int): número máximo de iterações em que não houve melhora (padrão: 100)
         step_size (float): valor de delta X (padrão: 0.1)
-        num_steps (int): número máximo de iterações (padrão: 1000)
         
     Returns:
-        current_x_values (np.ndarray[float, ...]): valores de x calculados, sendo o último o mínimo/máximo local encontrado
-        current_func_values (np.ndarray[float, ...]): valor da função calculados, sendo o último o melhor possível
-        step (int): número de passos necessários
+        best_global_population (np.ndarray[float, ...]): lista com as melhores populações globais obtidas ao decorrer das gerações
+        best_local_population (np.ndarray[float, ...]): lista com as melhores populações locais obtidas ao decorrer das gerações
+        best_global_fitness (np.ndarray[float, ...]): lista com as melhores aptidões globais obtidas ao decorrer das gerações
+        best_local_fitness (np.ndarray[float, ...]): lista com as melhores aptidões locais obtidas ao decorrer das gerações
+        all_mean_fitness (np.ndarray[float, ...]): lista com a média das aptidões obtidas ao decorrer das gerações
+        generation (int): número de gerações decorridas
     """
 
     print(f"{'-'*50}")
     print(f"{'Hill-Climbing':^50}")
     print(f"{'-'*50}")
 
-    # Inicialização aleatória de um ponto da função
-    current_x = np.random.uniform(bounds[0][0], bounds[0][1])
+    # Geração do indivíduo (valor) inicial, de forma randômica e dentro do intervalo definido
+    initial_population = np.random.uniform(bounds[:, 0], bounds[:, 1], bounds.shape[0])
 
-    # Encontrando o valor da função para o X iniciado
-    current_func = func(current_x)
+    # Avaliação do indivíduo inicial
+    cur_fitness = np.array([fitness_func(initial_population)])
+ 
+    # Recuperando o melhor da população inicial e definindo valores iniciais
+    best_global_fitness = [np.min(cur_fitness) if is_min else np.max(cur_fitness)]
+    best_local_fitness = [np.min(cur_fitness) if is_min else np.max(cur_fitness)]
+    all_mean_fitness = [np.mean(cur_fitness)]
+    best_global_population = np.array([individual for individual in np.array([initial_population[np.argmin(
+        cur_fitness)] if is_min else initial_population[np.argmax(cur_fitness)]])])
+    best_local_population = np.array([individual for individual in [initial_population[np.argmin(
+        cur_fitness)] if is_min else initial_population[np.argmax(cur_fitness)]]])
 
-    # Salva os valores de X e Y no vetor de saída
-    current_x_values = np.array(current_x, dtype=np.float32)
-    current_func_values = np.array(current_func, dtype=np.float32)
+    # Início feito a partir da população inicial
+    cur_population = initial_population
 
-    # Realizando os passos iterativos
-    step = 1
-    while (step < num_steps and current_func != target_value):
-
-        # Aumenta o número da iteração
-        step = step + 1
-
-        # Calcula o valor da função para o X atual
-        current_func = func(current_x)
-
-        # Gera um novo ponto X, a partir da pertubação
-        neighbor_x = current_x + np.random.uniform(-step_size, step_size)
-
-        # Calcula o valor da função para o novo ponto X
-        neighbor_func = func(neighbor_x)
+    # Percorrendo as gerações
+    generation = 1
+    patience = 1
+    while (generation < max_gen and
+           patience != max_patience and
+           (target_value not in best_global_fitness)):
+        # Aumenta o número da geração atual
+        generation = generation + 1
+        
+        # Gera um vizinho da população inicial, a partir de uma pertubação gaussiana
+        neighbor_population = cur_population + np.random.uniform(-step_size, step_size, cur_population.shape)
 
         # Realiza a avaliação dos valores
+        neighbor_fitness = np.array([fitness_func(neighbor_population)])
+        
+        #print(neighbor_population, ' ', neighbor_fitness)
+        
         # Minimização
-        if (is_min):
-            # Se o valor da função no novo ponto for menor
-            # do que o valor atual, atualiza o ponto atual
-            if (neighbor_func < current_func):
-                current_x = neighbor_x
+        if is_min:
+            # Verificação da Paciência (otimização)
+            if np.min(neighbor_fitness) == np.min(best_global_fitness):
+                patience = patience + 1
+
+            # Atualizando valores globais
+            if np.min(neighbor_fitness) < np.min(best_global_fitness):
+                patience = 1
+                cur_population = np.copy(neighbor_population)
+                best_global_fitness = np.append(
+                    best_global_fitness,
+                    np.array([np.min(neighbor_fitness)]),
+                    axis=0)
+                best_global_population = np.append(
+                    best_global_population,
+                    np.array([cur_population[np.argmin(neighbor_fitness)]]),
+                    axis=0)
+            else:
+                best_global_fitness = np.append(
+                    best_global_fitness,
+                    [best_global_fitness[-1]],
+                    axis=0)
+                best_global_population = np.append(
+                    best_global_population,
+                    [best_global_population[-1]],
+                    axis=0)
+
+            # Independente se conseguiu melhor resultado, salva nas listas de retorno para pós-visualização
+            best_local_fitness = np.append(
+                best_local_fitness,
+                np.array([np.min(neighbor_fitness)]),
+                axis=0)
+
+            best_local_population = np.append(
+                best_local_population,
+                np.array([cur_population[np.argmin(neighbor_fitness)]]),
+                axis=0)
 
         # Maximização
         else:
-            # Se o valor da função no novo ponto for maior
-            # do que o valor atual, atualiza o ponto atual
-            if (neighbor_func > current_func):
-                current_x = neighbor_x
+            # Verificação da Paciência (otimização)
+            if np.max(neighbor_fitness) == np.max(best_global_fitness):
+                patience = patience + 1
 
-        # Salva os valores de X e Y no vetor de saída
-        current_x_values = np.append(current_x_values, current_x)
-        current_func_values = np.append(current_func_values, func(current_x))
+            # Atualizando valores globais
+            if np.max(neighbor_fitness) > np.max(best_global_fitness):
+                patience = 1
+                cur_population = np.copy(neighbor_population)
+                best_global_fitness = np.append(
+                    best_global_fitness,
+                    np.array([np.max(neighbor_fitness)]),
+                    axis=0)
+                best_global_population = np.append(
+                    best_global_population,
+                    np.array([cur_population[np.argmax(neighbor_fitness)]]),
+                    axis=0)
+            else:
+                best_global_fitness = np.append(
+                    best_global_fitness,
+                    [best_global_fitness[-1]],
+                    axis=0)
+                best_global_population = np.append(
+                    best_global_population,
+                    [best_global_population[-1]],
+                    axis=0)
+
+            # Independente se conseguiu melhor resultado, salva nas listas de retorno para pós-visualização
+            best_local_fitness = np.append(
+                best_local_fitness,
+                np.array([np.max(neighbor_fitness)]),
+                axis=0)
+
+            best_local_population = np.append(
+                best_local_population,
+                np.array([cur_population[np.argmax(neighbor_fitness)]]),
+                axis=0)
+
+        # Salvando as médias das aptidões
+        all_mean_fitness = np.append(
+            all_mean_fitness,
+            np.array([np.mean(neighbor_fitness)]),
+            axis=0)
+        
+
+    print(f"Geração {generation}")
+    print(f"Melhor Aptidão: {best_global_fitness[-1]}")
+    print(f"Melhor Indivíduo: {best_global_population[-1]}")
 
     print(f"{'-'*50}")
     print(f"{'Fim do Hill-Climbing':^50}")
     print(f"{'-'*50}")
 
-    # Retorno do melhor ponto encontrado
-    return current_x_values, current_func_values, step
+    return best_global_population, best_local_population, best_global_fitness, best_local_fitness, all_mean_fitness, generation
 
 
-# Subida da Colina Iterativo
-def iterated_hill_climbing(
-    func: callable,
-    num_points: int,
-    target_value: float = float('inf'),
-    is_min=True,
-    bounds=np.array([[-1.0, 1.0]]),
-    step_size=0.1,
-    num_steps=1000
-):
-    """Aplicação do algoritmo "Subida da Colina",
-    em sua versão iterativa, para busca local em uma função.
-    Utiliza, neste caso, VÁRIOS PONTOS da função.\n
+# # Subida da Colina Iterativo
+# def iterated_hill_climbing(
+#     func: callable,
+#     num_points: int,
+#     target_value: float = float('inf'),
+#     is_min=True,
+#     bounds=np.array([[-1.0, 1.0]]),
+#     step_size=0.1,
+#     num_steps=1000
+# ):
+#     """Aplicação do algoritmo "Subida da Colina",
+#     em sua versão iterativa, para busca local em uma função.
+#     Utiliza, neste caso, VÁRIOS PONTOS da função.\n
     
-    Para apenas um ponto, utilize a "Subida da Colina padrão".
+#     Para apenas um ponto, utilize a "Subida da Colina padrão".
 
-    Args:
-        func (callable): função de avaliação
-        num_points (int): número de pontos iniciais para aplicar no algoritmo padrão
-        target_value (float, opcional): valor alvo estipulado para função de avaliação
-        is_min (bool): booleana para atribuir algoritmo para min/max (padrão: True)
-            -> Se 'True', irá verificar minimização\n
-            -> Se 'False', irá verificar maximização
-        bounds (np.ndarray[[float, float], ...]): lista com valores do intervalo da função (padrão: [-1.0 1.0])
-        step_size (float): valor de delta X (padrão: 0.1)
-        num_steps (int): número máximo de iterações (padrão: 1000)
+#     Args:
+#         func (callable): função de avaliação
+#         num_points (int): número de pontos iniciais para aplicar no algoritmo padrão
+#         target_value (float, opcional): valor alvo estipulado para função de avaliação
+#         is_min (bool): booleana para atribuir algoritmo para min/max (padrão: True)
+#             -> Se 'True', irá verificar minimização\n
+#             -> Se 'False', irá verificar maximização
+#         bounds (np.ndarray[[float, float], ...]): lista com valores do intervalo da função (padrão: [-1.0 1.0])
+#         step_size (float): valor de delta X (padrão: 0.1)
+#         num_steps (int): número máximo de iterações (padrão: 1000)
         
-    Returns:
-        current_x_values (np.ndarray[[float, float], ...]): valores de x calculados
-            -> Leve em conta a cada dois valores, sendo o primeiro o ponto inicial e o segundo o melhor ponto obtido a partir do primeiro
-        current_func_values (np.ndarray[[float, float], ...]): valor da função calculados, sendo o último o melhor possível
-        points (int): número de pontos totais utilizados
-        step (int): número de passos necessários
-    """
+#     Returns:
+#         current_x_values (np.ndarray[[float, float], ...]): valores de x calculados
+#             -> Leve em conta a cada dois valores, sendo o primeiro o ponto inicial e o segundo o melhor ponto obtido a partir do primeiro
+#         current_func_values (np.ndarray[[float, float], ...]): valor da função calculados, sendo o último o melhor possível
+#         points (int): número de pontos totais utilizados
+#         step (int): número de passos necessários
+#     """
 
-    print(f"{'-'*50}")
-    print(f"{'Hill-Climbing Iterativo':^50}")
-    print(f"{'-'*50}")
+#     print(f"{'-'*50}")
+#     print(f"{'Hill-Climbing Iterativo':^50}")
+#     print(f"{'-'*50}")
 
-    # Inicialização das variáveis para melhor valor encontrado
-    best_x = None
-    best_func = None
-    current_x_values = []
-    current_func_values = []
+#     # Inicialização das variáveis para melhor valor encontrado
+#     best_x = None
+#     best_func = None
+#     current_x_values = []
+#     current_func_values = []
 
-    # Realizando os passos iterativos
-    point = 1
-    while (point < num_points and best_func != target_value):
-        # Aumenta o número da iteração (ir para próximo ponto)
-        point = point + 1
+#     # Realizando os passos iterativos
+#     point = 1
+#     while (point < num_points and best_func != target_value):
+#         # Aumenta o número da iteração (ir para próximo ponto)
+#         point = point + 1
 
-        # Geração aleatória de um ponto, com base no intervalo
-        current_x = np.random.uniform(bounds[0][0], bounds[0][1])
+#         # Geração aleatória de um ponto, com base no intervalo
+#         current_x = np.random.uniform(bounds[0][0], bounds[0][1])
 
-        # Obtenção do valor da função neste ponto
-        current_func = func(current_x)
+#         # Obtenção do valor da função neste ponto
+#         current_func = func(current_x)
 
-        # Salva os valores de X e Y iniciais no vetor de saída
-        initial_x = current_x
-        initial_func = current_func
+#         # Salva os valores de X e Y iniciais no vetor de saída
+#         initial_x = current_x
+#         initial_func = current_func
 
-        # Realizar o "Subida da Colina padrão" para este ponto
-        step = 1
-        while (step < num_steps and current_func != target_value):
-            # Aumenta o número da iteração
-            step = step + 1
+#         # Realizar o "Subida da Colina padrão" para este ponto
+#         step = 1
+#         while (step < num_steps and current_func != target_value):
+#             # Aumenta o número da iteração
+#             step = step + 1
 
-            # Calcula o valor da função para o X atual
-            current_func = func(current_x)
+#             # Calcula o valor da função para o X atual
+#             current_func = func(current_x)
 
-            # Gera um novo ponto X, a partir da pertubação
-            neighbor_x = current_x + np.random.uniform(-step_size, step_size)
+#             # Gera um novo ponto X, a partir da pertubação
+#             neighbor_x = current_x + np.random.uniform(-step_size, step_size)
 
-            # Calcula o valor da função para o novo ponto X
-            neighbor_func = func(neighbor_x)
+#             # Calcula o valor da função para o novo ponto X
+#             neighbor_func = func(neighbor_x)
 
-            # Realiza a avaliação dos valores
-            # Minimização
-            if (is_min):
-                # Se o valor da função no novo ponto for menor
-                # do que o valor atual, atualiza o ponto atual
-                if (neighbor_func < current_func):
-                    current_x = neighbor_x
+#             # Realiza a avaliação dos valores
+#             # Minimização
+#             if (is_min):
+#                 # Se o valor da função no novo ponto for menor
+#                 # do que o valor atual, atualiza o ponto atual
+#                 if (neighbor_func < current_func):
+#                     current_x = neighbor_x
 
-            # Maximização
-            else:
-                # Se o valor da função no novo ponto for maior
-                # do que o valor atual, atualiza o ponto atual
-                if (neighbor_func > current_func):
-                    current_x = neighbor_x
+#             # Maximização
+#             else:
+#                 # Se o valor da função no novo ponto for maior
+#                 # do que o valor atual, atualiza o ponto atual
+#                 if (neighbor_func > current_func):
+#                     current_x = neighbor_x
 
-        # Realiza a avaliação dos valores
-        # Minimização
-        if (is_min):
-            # Se o valor da função no novo ponto for menor
-            # do que o valor atual, atualiza o ponto atual
-            if (best_func is None or func(current_x) < best_func):
-                best_x = current_x
-                best_func = func(current_x)
+#         # Realiza a avaliação dos valores
+#         # Minimização
+#         if (is_min):
+#             # Se o valor da função no novo ponto for menor
+#             # do que o valor atual, atualiza o ponto atual
+#             if (best_func is None or func(current_x) < best_func):
+#                 best_x = current_x
+#                 best_func = func(current_x)
 
-        # Maximização
-        else:
-            # Se o valor da função no novo ponto for maior
-            # do que o valor atual, atualiza o ponto atual
-            if (best_func is None or func(current_x) > best_func):
-                best_x = current_x
-                best_func = func(current_x)
+#         # Maximização
+#         else:
+#             # Se o valor da função no novo ponto for maior
+#             # do que o valor atual, atualiza o ponto atual
+#             if (best_func is None or func(current_x) > best_func):
+#                 best_x = current_x
+#                 best_func = func(current_x)
 
-        # Salva os valores de X e Y melhores no vetor de saída
-        initial_x = [initial_x, best_x]
-        initial_func = [initial_func, best_func]
+#         # Salva os valores de X e Y melhores no vetor de saída
+#         initial_x = [initial_x, best_x]
+#         initial_func = [initial_func, best_func]
 
-        current_x_values.append(initial_x)
-        current_func_values.append(initial_func)
+#         current_x_values.append(initial_x)
+#         current_func_values.append(initial_func)
 
-    print(f"{'-'*50}")
-    print(f"{'Fim do Hill-Climbing Iterativo':^50}")
-    print(f"{'-'*50}")
+#     print(f"{'-'*50}")
+#     print(f"{'Fim do Hill-Climbing Iterativo':^50}")
+#     print(f"{'-'*50}")
 
-    # Retorno do melhor ponto encontrado
-    return np.array(current_x_values), np.array(current_func_values), point, step - 1
+#     # Retorno do melhor ponto encontrado
+#     return np.array(current_x_values), np.array(current_func_values), point, step - 1
 
 
-# Subida da Colina Probabilístico
-def stochastic_hill_climbing(
-    func: callable,
-    target_value: float = float('inf'),
-    is_min=True,
-    bounds=np.array([[-1.0, 1.0]]),
-    step_size=0.1,
-    num_steps=1000,
-    t_exp=0.01
-):
-    """Aplicação do algoritmo "Subida da Colina",
-    em sua versão probabilística, para busca local em uma função.
-    Utiliza, neste caso, apenas UM PONTO da função.\n
+# # Subida da Colina Probabilístico
+# def stochastic_hill_climbing(
+#     func: callable,
+#     target_value: float = float('inf'),
+#     is_min=True,
+#     bounds=np.array([[-1.0, 1.0]]),
+#     step_size=0.1,
+#     num_steps=1000,
+#     t_exp=0.01
+# ):
+#     """Aplicação do algoritmo "Subida da Colina",
+#     em sua versão probabilística, para busca local em uma função.
+#     Utiliza, neste caso, apenas UM PONTO da função.\n
     
-    Para um ponto, porém menos efetivo, utilize a "Subida da Colina padrão".
-    Para mais pontos, utilize a "Subida da Colina Iterativa".
+#     Para um ponto, porém menos efetivo, utilize a "Subida da Colina padrão".
+#     Para mais pontos, utilize a "Subida da Colina Iterativa".
 
-    Args:
-        func (callable): função de avaliação
-        target_value (float, opcional): valor alvo estipulado para função de avaliação
-        is_min (bool): booleana para atribuir algoritmo para min/max (padrão: True)
-            -> Se 'True', irá verificar minimização\n
-            -> Se 'False', irá verificar maximização
-        bounds (np.ndarray[[float, float], ...]): lista com valores do intervalo da função (padrão: [-1.0 1.0])
-        step_size (float): valor de delta X (padrão: 0.1)
-        num_steps (int): número máximo de iterações (padrão: 1000)
-        t_exp (float): controle do decaimento da função exponencial (padrão: 1.5)
+#     Args:
+#         func (callable): função de avaliação
+#         target_value (float, opcional): valor alvo estipulado para função de avaliação
+#         is_min (bool): booleana para atribuir algoritmo para min/max (padrão: True)
+#             -> Se 'True', irá verificar minimização\n
+#             -> Se 'False', irá verificar maximização
+#         bounds (np.ndarray[[float, float], ...]): lista com valores do intervalo da função (padrão: [-1.0 1.0])
+#         step_size (float): valor de delta X (padrão: 0.1)
+#         num_steps (int): número máximo de iterações (padrão: 1000)
+#         t_exp (float): controle do decaimento da função exponencial (padrão: 1.5)
         
-    Returns:
-        current_x_values (np.ndarray[float, ...]): valores de x calculados, sendo o último o mínimo/máximo local encontrado
-        current_func_values (np.ndarray[float, ...]): valor da função calculados, sendo o último o melhor possível
-        step (int): número de passos necessários
-    """
+#     Returns:
+#         current_x_values (np.ndarray[float, ...]): valores de x calculados, sendo o último o mínimo/máximo local encontrado
+#         current_func_values (np.ndarray[float, ...]): valor da função calculados, sendo o último o melhor possível
+#         step (int): número de passos necessários
+#     """
 
-    print(f"{'-'*50}")
-    print(f"{'Hill-Climbing Probabilístico':^50}")
-    print(f"{'-'*50}")
+#     print(f"{'-'*50}")
+#     print(f"{'Hill-Climbing Probabilístico':^50}")
+#     print(f"{'-'*50}")
 
-    # Inicialização aleatória de um ponto da função
-    current_x = np.random.uniform(bounds[0][0], bounds[0][1])
+#     # Inicialização aleatória de um ponto da função
+#     current_x = np.random.uniform(bounds[0][0], bounds[0][1])
 
-    # Encontrando o valor da função para o X iniciado
-    current_func = func(current_x)
+#     # Encontrando o valor da função para o X iniciado
+#     current_func = func(current_x)
 
-    # Salva os valores de X e Y no vetor de saída
-    current_x_values = np.array(current_x, dtype=np.float32)
-    current_func_values = np.array(current_func, dtype=np.float32)
+#     # Salva os valores de X e Y no vetor de saída
+#     current_x_values = np.array(current_x, dtype=np.float32)
+#     current_func_values = np.array(current_func, dtype=np.float32)
 
-    # Realizando os passos iterativos
-    step = 1
-    while (step < num_steps and current_func != target_value):
-        # Aumenta o número da iteração
-        step = step + 1
+#     # Realizando os passos iterativos
+#     step = 1
+#     while (step < num_steps and current_func != target_value):
+#         # Aumenta o número da iteração
+#         step = step + 1
 
-        # Calcula o valor da função para o X atual
-        current_func = func(current_x)
+#         # Calcula o valor da função para o X atual
+#         current_func = func(current_x)
 
-        # Gera um novo ponto X, a partir da pertubação
-        neighbor_x = current_x + np.random.uniform(-step_size, step_size)
+#         # Gera um novo ponto X, a partir da pertubação
+#         neighbor_x = current_x + np.random.uniform(-step_size, step_size)
 
-        # Calcula o valor da função para o novo ponto X
-        neighbor_func = func(neighbor_x)
+#         # Calcula o valor da função para o novo ponto X
+#         neighbor_func = func(neighbor_x)
 
-        # Realiza a avaliação dos valores
-        # Minimização
-        if (is_min):
-            # Calcula a probabilidade P do método
-            # prob = (1 / (1 + np.exp((neighbor_func - current_func) / (t_exp + 1e-8))))
-            prob = np.exp((neighbor_func - current_func) / (t_exp + 1e-8))
+#         # Realiza a avaliação dos valores
+#         # Minimização
+#         if (is_min):
+#             # Calcula a probabilidade P do método
+#             # prob = (1 / (1 + np.exp((neighbor_func - current_func) / (t_exp + 1e-8))))
+#             prob = np.exp((neighbor_func - current_func) / (t_exp + 1e-8))
 
-            # Caso o resultado seja melhor que o atual
-            if current_func >= neighbor_func:
-                current_x = neighbor_x
-            # Do coontrário, valida o objetivo com base na probabilidade
-            elif np.random.uniform() < prob:
-                current_x = neighbor_x
+#             # Caso o resultado seja melhor que o atual
+#             if current_func >= neighbor_func:
+#                 current_x = neighbor_x
+#             # Do coontrário, valida o objetivo com base na probabilidade
+#             elif np.random.uniform() < prob:
+#                 current_x = neighbor_x
 
-        # Maximização
-        else:
-            # Calcula a probabilidade P do método
-            # prob = (1 / (1 + np.exp((current_func - neighbor_func) / (t_exp + 1e-8))))
-            prob = np.exp((current_func - neighbor_func) / (t_exp + 1e-8))
+#         # Maximização
+#         else:
+#             # Calcula a probabilidade P do método
+#             # prob = (1 / (1 + np.exp((current_func - neighbor_func) / (t_exp + 1e-8))))
+#             prob = np.exp((current_func - neighbor_func) / (t_exp + 1e-8))
 
-            # Caso o resultado seja melhor que o atual
-            if current_func <= neighbor_func:
-                current_x = neighbor_x
-            # Do coontrário, valida o objetivo com base na probabilidade
-            elif np.random.uniform() < prob:
-                current_x = neighbor_x
+#             # Caso o resultado seja melhor que o atual
+#             if current_func <= neighbor_func:
+#                 current_x = neighbor_x
+#             # Do coontrário, valida o objetivo com base na probabilidade
+#             elif np.random.uniform() < prob:
+#                 current_x = neighbor_x
 
-        # Salva os valores de X e Y no vetor de saída
-        current_x_values = np.append(current_x_values, neighbor_x)
-        current_func_values = np.append(current_func_values, func(neighbor_x))
+#         # Salva os valores de X e Y no vetor de saída
+#         current_x_values = np.append(current_x_values, neighbor_x)
+#         current_func_values = np.append(current_func_values, func(neighbor_x))
 
-    print(f"{'-'*50}")
-    print(f"{'Fim do Hill-Climbing Probabilístico':^50}")
-    print(f"{'-'*50}")
+#     print(f"{'-'*50}")
+#     print(f"{'Fim do Hill-Climbing Probabilístico':^50}")
+#     print(f"{'-'*50}")
 
-    # Retorno do melhor ponto encontrado
-    return current_x_values, current_func_values, step
+#     # Retorno do melhor ponto encontrado
+#     return current_x_values, current_func_values, step
 
 
 # Recozimento Simulado
 def simulated_annealing(
-    func: callable,
-    target_value: float = float('inf'),
+    fitness_func: callable,
+    target_value: float=float('inf'),
     is_min=True,
     bounds=np.array([[-1.0, 1.0]]),
+    max_gen=10000,
+    max_patience=100,
     step_size=0.1,
-    num_steps=1000,
     t_initial=0.01,
     beta=0.8
 ):
     """Aplicação do algoritmo "Recozimento Simulado"
     para busca global em uma função.
-
+    
     Args:
-        func (callable): função de avaliação
-        target_value (float, opcional): valor alvo estipulado para função de avaliação
+        fitness_func (callable): função de avaliação de aptidão
+        target_value (float, opcional): valor alvo estipulado para função de avaliação (padrão: infinito)
         is_min (bool): booleana para atribuir algoritmo para min/max (padrão: True)
-            -> Se 'True', irá verificar minimização.\n
-            -> Se 'False', irá verificar maximização.
+            - Se 'True', irá verificar minimização\n
+            - Se 'False', irá verificar maximização
         bounds (np.ndarray[[float, float], ...]): lista com valores do intervalo da função (padrão: [-1.0 1.0])
+        max_gen (int): número máximo de gerações possíveis (padrão: 10000)
+        max_patience (int): número máximo de iterações em que não houve melhora (padrão: 100)
         step_size (float): valor de delta X (padrão: 0.1)
-        num_steps (int): número máximo de iterações (padrão: 1000)
         t_initial (float): valor decimal da temperatura inicial (padrão: 0.01)
         beta (float): taxa de resfriamento pelo decremento geométrico (padrão: 0.8)
         
+        
     Returns:
-        current_x_values (np.ndarray[float, ...]): valores de x calculados, sendo o último o mínimo/máximo global encontrado
-        current_func_values (np.ndarray[float, ...]): valor da função calculados, sendo o último o melhor possível
-        step (int): número de passos necessários
+        best_global_population (np.ndarray[float, ...]): lista com as melhores populações globais obtidas ao decorrer das gerações
+        best_local_population (np.ndarray[float, ...]): lista com as melhores populações locais obtidas ao decorrer das gerações
+        best_global_fitness (np.ndarray[float, ...]): lista com as melhores aptidões globais obtidas ao decorrer das gerações
+        best_local_fitness (np.ndarray[float, ...]): lista com as melhores aptidões locais obtidas ao decorrer das gerações
+        all_mean_fitness (np.ndarray[float, ...]): lista com a média das aptidões obtidas ao decorrer das gerações
+        generation (int): número de gerações decorridas
     """
 
     print(f"{'-'*50}")
     print(f"{'Recozimento Simulado':^50}")
     print(f"{'-'*50}")
 
-    # Inicialização do ponto X aleatoriamente
-    current_x = np.random.uniform(bounds[0][0], bounds[0][1])
+    # Geração do indivíduo (valor) inicial, de forma randômica e dentro do intervalo definido
+    initial_population = np.random.uniform(
+        bounds[:, 0], bounds[:, 1], bounds.shape[0])
 
-    # Calculo do valor da função no ponto gerado
-    current_func = func(current_x)
+    # Avaliação do indivíduo inicial
+    cur_fitness = np.array([fitness_func(initial_population)])
 
-    # Salva os valores de X e Y no vetor de saída
-    current_x_values = np.array(current_x, dtype=np.float32)
-    current_func_values = np.array(current_func, dtype=np.float32)
+    # Recuperando o melhor da população inicial e definindo valores iniciais
+    best_global_fitness = [
+        np.min(cur_fitness) if is_min else np.max(cur_fitness)]
+    best_local_fitness = [
+        np.min(cur_fitness) if is_min else np.max(cur_fitness)]
+    all_mean_fitness = [np.mean(cur_fitness)]
+    best_global_population = np.array([individual for individual in np.array([initial_population[np.argmin(
+        cur_fitness)] if is_min else initial_population[np.argmax(cur_fitness)]])])
+    best_local_population = np.array([individual for individual in [initial_population[np.argmin(
+        cur_fitness)] if is_min else initial_population[np.argmax(cur_fitness)]]])
 
-    # Realizando os passos iterativos
-    step = 1
+    # Início feito a partir da população inicial
+    cur_population = initial_population
+
+    # Percorrendo as gerações
+    generation = 1
+    patience = 1
     t_actual = t_initial
-    while (step < num_steps and current_func != target_value):
-        # Aumenta o número da iteração
-        step = step + 1
+    while (generation < max_gen and
+           patience != max_patience and
+           (target_value not in best_global_fitness)):
+        # Aumenta o número da geração atual
+        generation = generation + 1
 
-        # Geração aleatória de um vizinho de X
-        neighbor_x = np.random.uniform(-step_size, step_size)
-
-        # Calculo do valor da função neste vizinho gerado
-        neighbor_func = func(neighbor_x)
+        # Gera um vizinho da população inicial, a partir de uma pertubação gaussiana
+        neighbor_population = cur_population + np.random.uniform(-step_size, step_size, cur_population.shape)
 
         # Realiza a avaliação dos valores
+        neighbor_fitness = np.array([fitness_func(neighbor_population)])
+
+        # print(neighbor_population, ' ', neighbor_fitness)
+
+        # Avaliação dos resultados
+        delta_fitness = neighbor_fitness - cur_fitness
+
         # Minimização
-        if (is_min):
-            # Calcula a probabilidade P do método
-            # prob = (1 / (1 + np.exp((neighbor_func - current_func) / (t_actual + 1e-8))))
-            prob = np.exp((neighbor_func - current_func) / (t_actual + 1e-8))
+        if is_min:
+            # Verifica se o vizinho encontrado é melhor que o atual
+            if delta_fitness < 0:
+                # Salva o novo valor como melhor
+                cur_population = np.copy(neighbor_population)
+                cur_fitness = np.copy(neighbor_fitness)
+            else:
+                # Aplica a fórmula da probabilidade
+                prob = np.exp(delta_fitness / t_actual * 1e-8)
+                if np.random.rand() < prob:
+                    cur_population = np.copy(neighbor_population)
+                    cur_fitness = np.copy(neighbor_fitness)
+                
+            # Verificação da Paciência (otimização)
+            if (np.min(cur_fitness) == np.min(best_global_fitness)):
+                patience = patience + 1
 
-            # Caso o resultado seja melhor que o atual
-            if current_func >= neighbor_func:
-                current_x = neighbor_x
-            # Do contrário, valida o objetivo com base na probabilidade
-            elif np.random.uniform() < prob:
-                current_x = neighbor_x
-
+            # Atualizando valores globais
+            if (np.min(cur_fitness) < np.min(best_global_fitness)):
+                patience = 1
+                best_global_fitness = np.append(
+                    best_global_fitness,
+                    np.array([np.min(cur_fitness)]),
+                    axis=0)
+                best_global_population = np.append(
+                    best_global_population,
+                    np.array([cur_population[np.argmin(cur_fitness)]]),
+                    axis=0)
+            else:
+                best_global_fitness = np.append(
+                    best_global_fitness,
+                    [best_global_fitness[-1]],
+                    axis=0)
+                best_global_population = np.append(
+                    best_global_population,
+                    [best_global_population[-1]],
+                    axis=0)
+            
         # Maximização
         else:
-            # Calcula a probabilidade P do método
-            # prob = (1 / (1 + np.exp((current_func - neighbor_func) / (t_actual + 1e-8))))
-            prob = np.exp((current_func - neighbor_func) / (t_actual + 1e-8))
+            # Verifica se o vizinho encontrado é melhor que o atual
+            if delta_fitness > 0:
+                # Salva o novo valor como melhor
+                cur_population = np.copy(neighbor_population)
+                cur_fitness = np.copy(neighbor_fitness)
+            else:
+                # Aplica a fórmula da probabilidade
+                prob = np.exp(delta_fitness / t_actual * 1e-8)
+                if np.random.rand() < prob:
+                    cur_population = np.copy(neighbor_population)
+                    cur_fitness = np.copy(neighbor_fitness)
+                
+            # Verificação da Paciência (otimização)
+            if (np.max(cur_fitness) == np.max(best_global_fitness)):
+                patience = patience + 1
 
-            # Caso o resultado seja melhor que o atual
-            if current_func <= neighbor_func:
-                current_x = neighbor_x
-            # Do coontrário, valida o objetivo com base na probabilidade
-            elif np.random.uniform() < prob:
-                current_x = neighbor_x
+            # Atualizando valores globais
+            if (np.max(cur_fitness) > np.max(best_global_fitness)):
+                patience = 1
+                best_global_fitness = np.append(
+                    best_global_fitness,
+                    np.array([np.max(cur_fitness)]),
+                    axis=0)
+                best_global_population = np.append(
+                    best_global_population,
+                    np.array([cur_population[np.argmax(cur_fitness)]]),
+                    axis=0)
+            else:
+                best_global_fitness = np.append(
+                    best_global_fitness,
+                    [best_global_fitness[-1]],
+                    axis=0)
+                best_global_population = np.append(
+                    best_global_population,
+                    [best_global_population[-1]],
+                    axis=0)
+            
+        # Independente se conseguiu melhor resultado, salva nas listas de retorno para pós-visualização
+        best_local_fitness = np.append(
+            best_local_fitness,
+            np.array(
+                [np.min(cur_fitness) if is_min else np.max(cur_fitness)]),
+            axis=0)
 
-        # Calculando o novo valor da temperatura
+        best_local_population = np.append(
+            best_local_population,
+            np.array([cur_population[np.argmin(cur_fitness)
+                        if is_min else np.argmax(cur_fitness)]]),
+            axis=0)
+
+        # Atualiza o valor da temperatura
         t_actual *= beta
 
-        # Salva os valores de X e Y no vetor de saída
-        current_x_values = np.append(current_x_values, neighbor_x)
-        current_func_values = np.append(current_func_values, func(neighbor_x))
+        # Salvando as médias das aptidões
+        all_mean_fitness = np.append(
+            all_mean_fitness,
+            np.array([np.mean(neighbor_fitness)]),
+            axis=0)
+
+    print(f"Geração {generation}")
+    print(f"Melhor Aptidão: {best_global_fitness[-1]}")
+    print(f"Melhor Indivíduo: {best_global_population[-1]}")
 
     print(f"{'-'*50}")
     print(f"{'Fim do Recozimento Simulado':^50}")
     print(f"{'-'*50}")
 
-    # Retorno do melhor ponto encontrado
-    return current_x_values, current_func_values, step
+    return best_global_population, best_local_population, best_global_fitness, best_local_fitness, all_mean_fitness, generation
 
 
 #####################################################
@@ -452,8 +623,7 @@ def simulated_annealing(
 def __float_to_binary(
     values: np.ndarray,
     bounds: np.ndarray,
-    int_digits=11,
-    dec_digits=20
+    bitstring_size=np.array([11, 20]),
 ):
     """Função responsável por converter um valor,
     em float, para representação binária,
@@ -465,8 +635,7 @@ def __float_to_binary(
     Args:       
         values (np.ndarray[float, ...]): variáveis em número em float
         bounds (np.ndarray[[float, float], ...]): lista contendo os intervalos das variáveis da função
-        int_digits (int): quantidade máxima de dígitos na parte inteira (padrão: 11)
-        dec_digits (int): quantidade máxima de dígitos na parte decimal (padrão: 20)
+        bitstring_size (np.ndarray[int, int]): lista a quantidade máx. de dígitos para parte inteira [0] e decimal [1] (padrão: [11, 20])
         
     Returns:
         binary_converted (list[bitstring, ...]): lista com número convertido em binário
@@ -484,11 +653,11 @@ def __float_to_binary(
         dec_part = abs(value) - int_part
 
         # Converter a parte inteira para binário, completando com zero à esquerda
-        int_str = np.binary_repr(int_part).zfill(int_digits)
+        int_str = np.binary_repr(int_part).zfill(bitstring_size[0])
 
         # Conversão da parte decimal para binário, completando com zeros à direita
         dec_str = ""
-        for _ in range(dec_digits):
+        for _ in range(bitstring_size[1]):
             # Realiza a potência de 2
             dec_part *= 2
 
@@ -511,8 +680,7 @@ def __float_to_binary(
 def __binary_to_float(
     values: np.ndarray,
     bounds: np.ndarray,
-    int_digits=11,
-    dec_digits=20
+    bitstring_size=np.array([11, 20]),
 ):
     """Função responsável por converter um valor,
     em representação binária, para float,
@@ -524,15 +692,14 @@ def __binary_to_float(
     Args:       
         values (np.ndarray[bitstring, ...]): lista com as variáveis em representação binária 
         bounds (np.ndarray[[float, float], ...]): lista contendo os intervalos das variáveis da função
-        int_digits (int): quantidade máxima de dígitos na parte inteira (padrão: 11)
-        dec_digits (int): quantidade máxima de dígitos na parte decimal (padrão: 20)
+        bitstring_size (np.ndarray[int, int]): lista a quantidade máx. de dígitos para parte inteira [0] e decimal [1] (padrão: [11, 20])
         
     Returns:
         float_converted (list[float, ...]): lista de variáveis convertidas em float
     """
 
     # Obtém o maior valor possível do binário, pela quantidade inteira (exclui bit de sinal)
-    largest_binary_num = (2 ** int_digits) - 1
+    largest_binary_num = (2 ** bitstring_size[0]) - 1
 
     # Inicia a lista de saída
     float_converted = []
@@ -540,8 +707,8 @@ def __binary_to_float(
     # Percorrendo a quantidade de variáveis da função
     for i in range(bounds.shape[0]):
         # Separa a parte inteira da decimal
-        signal, int_str, dec_str = values[i][0], values[i][1:int_digits +
-                                                           1], values[i][int_digits + 1:]
+        signal, int_str, dec_str = values[i][0], values[i][1:bitstring_size[0] +
+                                                           1], values[i][bitstring_size[0] + 1:]
 
         # Convertendo sinal
         signal_value = (-1) if signal == '1' else (1)
@@ -551,8 +718,7 @@ def __binary_to_float(
         int_num = int(int_str, 2)
 
         # Definir o intervalo de conversão (escala)
-        scaled_int_num = bounds[i][0] + \
-            (int_num / largest_binary_num) * (bounds[i][1] - bounds[i][0])
+        scaled_int_num = bounds[i][0] + (int_num / largest_binary_num) * (bounds[i][1] - bounds[i][0])
 
         # Converter a parte decimal para número pela fórmula inversa da decimal
         dec_num = np.sum([int(x) * 2 ** (- (k + 1))
@@ -570,10 +736,9 @@ def __binary_to_float(
 
 # Geração Aleatória da População
 def generate_population(
-    size_population=10,
+    bitstring_size=np.array([11, 20]),
+    population_size=10,
     bounds=np.array([[-1.0, 1.0]]),
-    int_size=11,
-    dec_size=20
 ):
     """Função responsável por gerar uma nova população,
     em bitstring (vetor de bits), advindos do float.
@@ -582,21 +747,20 @@ def generate_population(
     (Considere como tamanho total = 1 + int_digits + dec_digits)
 
     Args: 
-        size_population (int): tamanho da população (padrão: 10)
+        bitstring_size (np.ndarray[int, int]): lista a quantidade máx. de dígitos para parte inteira [0] e decimal [1] (padrão: [11, 20])
+        population_size (int): tamanho da população (padrão: 10)
         bounds (np.ndarray[[float, float], ...]): lista com valores do intervalo da função (padrão: [[-1.0, 1.0]])
-        int_digits (int): quantidade máxima de dígitos na parte inteira (padrão: 11)
-        dec_digits (int): quantidade máxima de dígitos na parte decimal (padrão: 20)
-    
+        
     Returns:
         population (np.ndarray[[bitstring, ...], ...]): população inicial gerada
     """
 
     # Geração de Float aleatório para cada variável
     individual_vals = np.random.uniform(
-        bounds[:, 0], bounds[:, 1], (size_population, bounds.shape[0]))
+        bounds[:, 0], bounds[:, 1], (population_size, bounds.shape[0]))
 
     # Conversão de Float para bitstring e salva como indivíduo
-    population = np.array([__float_to_binary(values=individual, bounds=bounds, int_digits=int_size, dec_digits=dec_size)
+    population = np.array([__float_to_binary(values=individual, bounds=bounds, bitstring_size=bitstring_size)
                           for individual in individual_vals])
 
     return population
@@ -609,7 +773,7 @@ def generate_population(
 # Seleção por Roleta: Problemas de MAXIMIZAÇÃO
 def __roulette_selection(
     cur_population: np.ndarray,
-    fitness: np.ndarray
+    fitness: np.ndarray,
 ):
     """Seleção de indivíduo pelo método da Roleta.
 
@@ -636,7 +800,7 @@ def __roulette_selection(
 def __tournament_selection(
     cur_population: np.ndarray,
     fitness: np.ndarray,
-    size=3
+    size=3,
 ):
     """Seleção de indivíduo pelo método do Torneio.
 
@@ -678,7 +842,7 @@ def __tournament_selection(
 def __crossover(
     parent1: np.ndarray,
     parent2: np.ndarray,
-    crossover_rate=0.8
+    crossover_rate=0.8,
 ):
     """Aplicação de crossover entre dois indivíduos.
 
@@ -720,7 +884,7 @@ def __crossover(
 # Mutação
 def __mutation(
     individual: np.ndarray,
-    mutation_rate=0.2
+    mutation_rate=0.2,
 ):
     """Aplicação de mutação em um indivíduo.
 
@@ -754,7 +918,7 @@ def __reproduction(
     elitism=False,
     elite_size: int = 3,
     crossover_rate=0.8,
-    mutation_rate=0.2
+    mutation_rate=0.2,
 ):
     """Reprodução de uma determinada população, em bitstring, 
     considerando crossover e mutação.
@@ -828,10 +992,9 @@ def genetic_algorithm(
     target_value: float = float('inf'),
     is_min=True,
     bounds=np.array([[-1.0, 1.0]]),
-    int_size=11,
-    dec_size=20,
+    bitstring_size=np.array([11, 20]),
     max_gen=10000,
-    max_patience=20,
+    max_patience=100,
     size_tournament: int = 3,
     elitism=False,
     elite_size: int = 3,
@@ -852,10 +1015,10 @@ def genetic_algorithm(
         fitness_func (callable): função de avaliação de aptidão
         target_value (float, opcional): valor alvo estipulado para função de avaliação (padrão: infinito)
         is_min (bool): booleana para atribuir algoritmo para min/max (padrão: True)
+            - Se 'True', irá verificar minimização\n
+            - Se 'False', irá verificar maximização
         bounds (np.ndarray[[float, float], ...]): lista com valores do intervalo da função (padrão: [-1.0 1.0])
-        int_size (int): quantidade máxima de dígitos na parte inteira (padrão: 11)
-        dec_size (int): quantidade máxima de dígitos na parte decimal (padrão: 20)
-            -> O primeiro bit da parte inteira é de sinal! (tamanho total = 1 + int_digits + dec_digits)
+        bitstring_size (np.ndarray[int, int]): lista a quantidade máx. de dígitos para parte inteira [0] e decimal [1] (padrão: [11, 20])
         max_gen (int): número máximo de gerações possíveis (padrão: 10000)
         max_patience (int): número máximo de iterações em que não houve melhora (padrão: 100)
         size_tournament (int, opcional se 'is_min=False'): número de indivíduos selecionados aleatóriamente para o torneio (padrão: 3)
@@ -865,11 +1028,17 @@ def genetic_algorithm(
         mutation_rate (float): taxa de mutação (padrão: 0.2)
 
     Returns:
-        best_population (np.ndarray[[float, ...], ...]): lista com as melhores populações obtidas ao decorrer das gerações
-        best_fitness (np.ndarray[[float], ...]): lista com as melhores aptidões obtidas ao decorrer das gerações
-        all_population (np.ndarray[[float, ...], ...]): lista com todas as populações obtidas, sendo a última a melhor possível
-        all_fitness (np.ndarray[[float, ...], ...]): lista com todas as aptidões obtidas, sendo a última a melhor possível
+        best_global_population (np.ndarray[[float, ...], ...]): lista com as melhores populações globais obtidas ao decorrer das gerações
+        best_local_population (np.ndarray[[float, ...], ...]): lista com as melhores populações locais obtidas ao decorrer das gerações
+        best_global_fitness (np.ndarray[[float], ...]): lista com as melhores aptidões globais obtidas ao decorrer das gerações
+        best_local_fitness (np.ndarray[[float], ...]): lista com as melhores aptidões locais obtidas ao decorrer das gerações
+        all_mean_fitness (np.ndarray[[float], ...]): lista com a média das aptidões obtidas ao decorrer das gerações
         generation (int): número de gerações decorridas
+    
+    Notes:
+        - O retorno das variáveis abaixo está comentado para otimização, use por sua conta e risco!
+            all_population (np.ndarray[[float, ...], ...]): lista com todas as populações obtidas, sendo a última a melhor possível
+            all_fitness (np.ndarray[[float, ...], ...]): lista com todas as aptidões obtidas, sendo a última a melhor possível
     """
 
     print(f"{'-'*50}")
@@ -877,16 +1046,23 @@ def genetic_algorithm(
     print(f"{'-'*50}")
 
     # Avaliação da população inicial
-    cur_fitness = np.array([fitness_func(__binary_to_float(individual, bounds=bounds,
-                           int_digits=int_size, dec_digits=dec_size)) for individual in initial_population])
+    cur_fitness = np.array([fitness_func(__binary_to_float(
+        individual, bounds=bounds, bitstring_size=bitstring_size)) for individual in initial_population])
 
     # Recuperando o melhor da população inicial e definindo valores iniciais
-    best_fitness = [np.min(cur_fitness) if is_min else np.max(cur_fitness)]
-    best_population = np.array([__binary_to_float(individual, bounds=bounds, int_digits=int_size, dec_digits=dec_size) for individual in [
-                               initial_population[np.argmin(cur_fitness)] if is_min else initial_population[np.argmax(cur_fitness)]]]).reshape((1, bounds.shape[0]))
-    all_population = np.array([__binary_to_float(individual, bounds=bounds, int_digits=int_size, dec_digits=dec_size)
-                              for individual in initial_population]).reshape((1, initial_population.shape[0], bounds.shape[0]))
-    all_fitness = np.array([cur_fitness])
+    best_global_fitness = [
+        np.min(cur_fitness) if is_min else np.max(cur_fitness)]
+    best_local_fitness = [
+        np.min(cur_fitness) if is_min else np.max(cur_fitness)]
+    all_mean_fitness = [np.mean(cur_fitness)]
+    best_global_population = np.array([__binary_to_float(individual, bounds=bounds, bitstring_size=bitstring_size) for individual in [
+        initial_population[np.argmin(cur_fitness)] if is_min else initial_population[np.argmax(cur_fitness)]]])  # .reshape((1, bounds.shape[0]))
+    best_local_population = np.array([__binary_to_float(individual, bounds=bounds, bitstring_size=bitstring_size) for individual in [
+        initial_population[np.argmin(cur_fitness)] if is_min else initial_population[np.argmax(cur_fitness)]]])  # .reshape((1, bounds.shape[0]))
+    #! ONLY IF WANTED
+    # all_population = np.array([__binary_to_float(individual, bounds=bounds, bitstring_size=bitstring_size)
+    #                           for individual in initial_population])#.reshape((1, initial_population.shape[0], bounds.shape[0]))
+    # all_fitness = np.array([cur_fitness])
 
     # Início feito a partir da população inicial
     cur_population = initial_population
@@ -894,7 +1070,9 @@ def genetic_algorithm(
     # Percorrendo as gerações
     generation = 1
     patience = 1
-    while (generation < max_gen and patience != max_patience and (target_value not in best_fitness)):
+    while (generation < max_gen and
+           patience != max_patience and
+           (target_value not in best_global_fitness)):
         # Aumenta o número da geração atual
         generation = generation + 1
 
@@ -920,28 +1098,53 @@ def genetic_algorithm(
                 [fitness_func(__binary_to_float(
                     individual,
                     bounds=bounds,
-                    int_digits=int_size,
-                    dec_digits=dec_size))
+                    bitstring_size=bitstring_size))
                  for individual in cur_population])
 
             # Atualização dos valores
-            if np.min(cur_fitness) < np.min(best_fitness):
-                best_fitness = np.append(
-                    best_fitness,
+            if np.min(cur_fitness) == np.min(best_global_fitness):
+                patience = patience + 1
+
+            # Atualizando valores globais
+            if np.min(cur_fitness) < np.min(best_global_fitness):
+                patience = 1
+                best_global_fitness = np.append(
+                    best_global_fitness,
                     np.array([np.min(cur_fitness)]),
                     axis=0)
-                best_population = np.append(
-                    best_population,
+                best_global_population = np.append(
+                    best_global_population,
                     [__binary_to_float(
                         individual,
                         bounds=bounds,
-                        int_digits=int_size,
-                        dec_digits=dec_size)
-                     for individual in [cur_population[np.argmin(cur_fitness)]]],
+                        bitstring_size=bitstring_size)
+                        for individual in
+                        [cur_population[np.argmin(cur_fitness)]]],
                     axis=0)
-                patience = 1
-            elif np.min(cur_fitness) == np.min(best_fitness):
-                patience = patience + 1
+            else:
+                best_global_fitness = np.append(
+                    best_global_fitness,
+                    [best_global_fitness[-1]],
+                    axis=0)
+                best_global_population = np.append(
+                    best_global_population,
+                    [best_global_population[-1]],
+                    axis=0)
+
+            # Independente se conseguiu melhor resultado, salva nas listas de retorno para pós-visualização
+            best_local_fitness = np.append(
+                best_local_fitness,
+                np.array([np.min(cur_fitness)]),
+                axis=0)
+
+            best_local_population = np.append(
+                best_local_population,
+                [__binary_to_float(
+                    individual,
+                    bounds=bounds,
+                    bitstring_size=bitstring_size)
+                    for individual in [cur_population[np.argmin(cur_fitness)]]],
+                axis=0)
 
         # Maximização
         else:
@@ -964,71 +1167,787 @@ def genetic_algorithm(
                 [fitness_func(__binary_to_float(
                     individual,
                     bounds=bounds,
-                    int_digits=int_size,
-                    dec_digits=dec_size))
+                    bitstring_size=bitstring_size))
                  for individual in cur_population])
 
-            # Atualização dos valores
-            if np.max(cur_fitness) > np.max(best_fitness):
-                best_fitness = np.append(
-                    best_fitness,
+            # Verificação da Paciência (otimização)
+            if np.max(cur_fitness) == np.max(best_global_fitness):
+                patience = patience + 1
+
+            # Atualizando valores globais
+            if np.max(cur_fitness) > np.max(best_global_fitness):
+                patience = 1
+                best_global_fitness = np.append(
+                    best_global_fitness,
                     np.array([np.max(cur_fitness)]),
                     axis=0)
-                best_population = np.append(
-                    best_population,
+                best_global_population = np.append(
+                    best_global_population,
                     [__binary_to_float(
                         individual,
                         bounds=bounds,
-                        int_digits=int_size,
-                        dec_digits=dec_size)
-                     for individual in
-                     [cur_population[np.argmax(cur_fitness)]]],
+                        bitstring_size=bitstring_size)
+                        for individual in
+                        [cur_population[np.argmax(cur_fitness)]]],
                     axis=0)
-                patience = 1
-            elif np.max(cur_fitness) == np.max(best_fitness):
-                patience = patience + 1
+            else:
+                best_global_fitness = np.append(
+                    best_global_fitness,
+                    [best_global_fitness[-1]],
+                    axis=0)
+                best_global_population = np.append(
+                    best_global_population,
+                    [best_global_population[-1]],
+                    axis=0)
 
-        # Independente se conseguiu melhor resultado, salva nas listas de retorno para pós-visualização
-        all_population = np.append(
-            all_population,
-            [[__binary_to_float(
-                individual,
-                bounds=bounds,
-                int_digits=int_size,
-                dec_digits=dec_size)
-              for individual in cur_population]],
+            # Independente se conseguiu melhor resultado, salva nas listas de retorno para pós-visualização
+            best_local_fitness = np.append(
+                best_local_fitness,
+                np.array([np.max(cur_fitness)]),
+                axis=0)
+
+            best_local_population = np.append(
+                best_local_population,
+                [__binary_to_float(
+                    individual,
+                    bounds=bounds,
+                    bitstring_size=bitstring_size)
+                    for individual in
+                    [cur_population[np.argmax(cur_fitness)]]],
+                axis=0)
+
+        # Salvando as médias das aptidões
+        all_mean_fitness = np.append(
+            all_mean_fitness,
+            np.array([np.mean(cur_fitness)]),
             axis=0)
 
-        all_fitness = np.append(all_fitness, [cur_fitness], axis=0)
-    
+        #! ONLY IF WANTED
+        # all_population = np.append(
+        #     all_population,
+        #     [individual for individual in cur_population],
+        #     axis=0)
+
+        # all_fitness = np.append(
+        #     all_fitness,
+        #     [cur_fitness],
+        #     axis=0)
+
     print(f"Geração {generation}")
-    print(f"Melhor Aptidão: {best_fitness[-1]}")
-    print(f"Melhor Indivíduo: {best_population[-1]}")
+    print(f"Melhor Aptidão: {best_global_fitness[-1]}")
+    print(f"Melhor Indivíduo: {best_global_population[-1]}")
 
     print(f"{'-'*50}")
     print(f"{'Fim do Algoritmo Genético':^50}")
     print(f"{'-'*50}")
 
-    return best_population, best_fitness, all_population, all_fitness, generation
+    return best_global_population, best_local_population, best_global_fitness, best_local_fitness, all_mean_fitness, generation
 
 
 ########################################
-#               Testes                 #
+#            Experimentos              #
 ########################################
+
+# Criar gráfico de um dos experimentos
+def plot_experiment(
+    filename: str,
+    alg_acronym: str,
+    type_plot: str,
+    num_cycle: int,
+    num_experiment: int,
+    population_size: int,
+    all_mean_fitness: np.ndarray,
+    best_fitness: np.ndarray,
+    crossover_rate=-1.0,
+    mutation_rate=-1.0,
+):
+    """Cria o gráfico de uma execução do Algoritmo Genético,
+    no formato 'Melhor Aptidão x Geração' 
+    (Melhor Aptidão por Geração).
+    
+    Args:
+        filename (str): nome do arquivo/exercicio (ex: 'ex01')
+        alg_acronym (str): sigla do algoritmo executado (ex: 'HC' - Hill-Climbing)
+        type_plot (str): plot normal ('normal') ou pela logarítimca ('log') (padrão: 'normal')
+        num_cycle (int): número do ciclo de execução
+        num_experiment (int): número do experimento dentro do ciclo
+        population_size (int): tamanho da população
+        all_mean_fitness (np.ndarray[[int, ...], ...]): lista com todas as aptidões obtidas, sendo a última a melhor possível
+        best_fitness (np.ndarray[[int], ...]): lista com as melhores aptidões obtidas ao decorrer das gerações
+        crossover_rate (float, opcional): taxa de crossover (padrão: -1.0)
+        mutation_rate (float, opcional): taxa de mutação (padrão: -1.0)
+        
+    Notes:
+        Cria um arquivo de imagem do gráfico com o seguinte nome: {alg_acronym}_ciclo{num_cycle}_exp{num_experiment}_pop{population_size}_cr{crossover_text}_mt{mutation_text}.png
+        Salva em um subdiretório da pasta local com o nome: {filename}
+    """
+    
+    # Pacote de plotar gráficos de listas NumPy
+    import matplotlib.pyplot as plt
+
+    # Defininido o sub-diretório dos dados
+    import os
+    actual_dir = os.path.dirname(__file__)
+    sub_directory = os.path.join(actual_dir, f'{filename}/')
+    os.makedirs(sub_directory, exist_ok=True)
+
+    # Definindo o nome do arquivo
+    crossover_text = "{:02d}".format(int(crossover_rate*100)) if crossover_rate > 0 else ''
+    mutation_text = "{:02d}".format(int(mutation_rate*100)) if mutation_rate > 0 else ''
+    plot_name = f'{alg_acronym}_ciclo{num_cycle}_exp{num_experiment}_pop{population_size}_cr{crossover_text}_mt{mutation_text}.png'
+
+    # Definindo os textos (nomes) do gráfico
+    plt.title(
+        str(f"Melhor: {best_fitness[-1]} Média: {np.mean(all_mean_fitness)}"),
+        loc='center')
+    plt.xlabel('Geração', loc='center')
+    plt.ylabel('Aptidão', loc='center')
+
+    # Plotando o gráfico com base nos valores
+    if type_plot == 'normal':
+        plt.plot(best_fitness,  label='Melhor Aptidão', marker='.', linewidth=0.5)
+        plt.plot(all_mean_fitness, label='Aptidão Média', marker='*', linewidth=0.5)
+    elif type_plot == 'log':
+        plt.semilogy(best_fitness,  label='Melhor Aptidão', marker='.', linewidth=0.5)
+        plt.semilogy(all_mean_fitness, label='Aptidão Média', marker='*', linewidth=0.5)
+
+    # Adiciona legenda
+    plt.legend()
+
+    # Plota e salva o gráfico em um arquivo
+    plt.savefig(os.path.join(sub_directory, plot_name))
+
+    # Encerra as configurações do gráfico
+    plt.close()
+
+
+# Manipular arquivos CSV
+def csv_table_experiment(
+    filename: str,
+    alg_acronym: str,
+    type_exp: str,
+    num_cycle: int,
+    rows: np.ndarray
+):
+    """Escreve os experimentos em um arquivo CSV para futura análise.
+    Necessário três tabelas por experimento: aptidão, gerações e tempo de execução.
+
+    Args:
+        filename (str): nome do arquivo/exercicio (ex: 'ex01')
+        alg_acronym (str): sigla do algoritmo executado (ex: 'HC' - Hill-Climbing)
+        type_exp (str): tipo da tabela (ex: 'aptidao')
+            -> Utilize: 'aptidao', 'geracao', 'tempo'
+        num_cycle (int): número do ciclo de execução
+        rows (np.ndarray[[dados, ...], ...]): lista com os dados das linhas no total (ex: [['10', '0.1'], ['20', '0.2'])
+        
+    Notes:
+        Cria um arquivo csv da tabela com o seguinte nome: {alg_acronym}_{type_exp}_ciclo{num_cycle}.csv  
+        Salva em um subdiretório da pasta local com o nome: {filename}
+    """
+
+    # Defininido o sub-diretório dos dados
+    import os
+    actual_dir = os.path.dirname(__file__)
+    sub_directory = os.path.join(actual_dir, f'{filename}/')
+    os.makedirs(sub_directory, exist_ok=True)
+
+    # Definindo o nome do arquivo
+    table_name = f'{alg_acronym}_{type_exp}_ciclo{num_cycle}.csv'
+
+    # Definindo o título da tabela com base no tipo de experimento
+    table_title = 'Tamanho da População,Taxa de Crossover,Taxa de Mutação,Média,Mediana,'
+    if type_exp == 'aptidao':
+        table_title = table_title + 'Melhor,Pior'
+    elif type_exp == 'geracao' or type_exp == 'tempo':
+        table_title = table_title + 'Mínimo,Máximo'
+
+    # Escrevendo o arquivo com o título
+    np.savetxt(fname=os.path.join(sub_directory, table_name), X=rows, fmt='%.4f', header=table_title,
+               delimiter=',', comments='', encoding='UTF-8')
+
 
 def main():
     """Função principal do programa
+    
+    Descrição dos Experimentos:
+    
+    - Algoritmos Pré-Genéticos: Subida da Colina e Recozimento Simulado
+        - Serão executados separadamente e seguindo as restrições abaixo.
+        
+        - Passos:
+            - Para cada taxa de variação inicial, realiza os experimentos e obtém a melhor taxa
+            - Utiliza essa taxa em outro ciclo de experimentos e obtém os dados finais
+                
+        Obs: Os nomes de saída são adaptados para serem iguais ao do Algoritmo Genético (evitar conflitos nos parâmetros)
+            - Exemplo: 'passo de iteração' <=> 'geração'
+        
+        - Restrições:
+            - 2 ciclos executados, sendo um para cada ponto na descrição
+            - cada ciclo: 25 vezes de execução do algoritmo
+            - tipo de problema (min/máx): maximização
+            - num. máx. gerações: 1000
+            - num. máx. 'paciência': 20
+            - um valor de população inicial: gerado aleatoriamente do intervalo da função
+            - taxa de variação inicial: 0.1, 0.2, 0.3, 0.4
+            - [Recozimento Simulado] 'T' inicial: 0.01
+            - [Recozimento Simulado] beta: 0.8
+    
+    - Algoritmo Genético
+        - Passos:
+            - Fixa taxa de crossover e mutação para selecionar um tamanho de população para os próximos
+            - Varia em par de taxas de crossover e mutação
+        
+        - Restrições:
+            - 2 ciclos executados, sendo um para cada ponto na descrição
+            - cada ciclo: 25 vezes de execução do algoritmo
+            - float p/bitstrings: 1 bit de sinal + 11 bits parte inteira + 20 bits parte decimal (32 bits)
+            - tipo de problema (min/máx): maximização
+            - num. máx. gerações: 1000
+            - num. máx. 'paciência': 20
+            - quatro tamanhos de população inicial: 20, 30, 40, 50
+            - método de seleção: roleta (maximização) ou torneio (minimização)
+            - crossover: 0.5, 0.6, 0.7, 0.8
+            - mutação: 0.1, 0.2, 0.3, 0.4
+            - sem elitismo
+            
+    - OBS: O critério de convergência para melhor população é a menor média de gerações entre as populações
+        
+    Função: g(x) = (2 ** (-2 * (((x - 0.1) / 0.9) ** 2))) * ((sin(5 * pi * x)) ** 6)
+        - intervalo definido por: [[-1.0, 1.0]]
+        - melhores valores esperados: [0.1] = 1
+    
+    Formato dos dados salvos:
+        - Gráfico (por ciclo): apenas um para cada população, do tipo "melhor aptidão x geração"
+        - Tabelas (por ciclo): aptidão, gerações e tempo de execução
     """
 
+    #! [Debug] Definição de saída para mostrar as matrizes por completo no console se necessário.
     np.set_printoptions(threshold=np.inf)
-    # Convertendo a taxa de mutação para ser relacionada ao número de bits e da população
-    # mutation_rate = 1.0 / (float(1 + int_size + dec_size) * len(bounds))
+
+    # Biblioteca para capturar o tempo de execução
+    from time import time
+
+    # Nome para arquivos de saída
+    filename = 'ex02'
+
+    ########################################
+    #!      Algoritmos Pré-Genéticos      !#
+    ########################################
     
-    print("\nFUNÇÃO 2")  # (0.1; 1)
-    bounds = np.array([[-10.0, 10.0]])
-    t1, t2, t3, t4, t5 = genetic_algorithm(generate_population(
-        bounds=bounds), f2, is_min=False, bounds=bounds, max_gen=10000)
-    #print('\n', t1, '\n', t2, '\n', t3, '\n', t4, '\n', t5, '\n')
+    # Definição das variáveis comuns aos algoritmos
+    fitness_func = f2
+    bounds = np.array([[-1.0, 1.0]])
+    target_value = float('inf')
+    max_cycle = 2
+    max_exp_per_cycle = 25
+    is_min = False
+    is_min = False
+    max_gen = 1000
+    max_patience = 20
+
+    ########################################
+    #!        Hill-Climbing Padrão        !#
+    ########################################
+
+    step_size_vals = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
+    
+    # Realização de cada ciclo
+    for num_cycle in range(1, max_cycle + 1):
+        # Armazenar as melhores aptidões por experimento de TODAS as populações
+        # - Formato: [[tam. pop., crossover, mutação, média, mediana, melhor, pior], ...]
+        cycle_best_fitness = []
+
+        # Armazenar as melhores gerações por experimento de TODAS as populações
+        # - Formato: [[tam. pop., crossover, mutação, média, mediana, mínimo, máximo], ...]
+        cycle_best_generation = []
+
+        # Armazenar o tempo de execução por experimento de TODAS as populações
+        # - Formato: [[tam. pop., crossover, mutação, média, mediana, mínimo, máximo], ...]
+        cycle_exec_time = []
+
+        # Percorre cada taxa de variação
+        for rate_idx, step_size in enumerate(step_size_vals):
+            # Armazenar as melhores aptidões de uma população
+            experiment_best_fitness = []
+
+            # Armazenar as melhores gerações de uma população
+            experiment_best_generation = []
+
+            # Armazenar o tempo de execução de uma população
+            experiment_exec_time = []
+            
+            # Obtendo um valor aletório para plotar um gráfico de um dos experimentos
+            plot_rand_num = np.random.randint(1, max_exp_per_cycle + 1)
+
+            # print(rate_idx, ' ', population_size, ' ', crossover_rate,' ', mutation_rate)
+
+            # Percorre o número máximo de experimentos
+            for num_experiment in range(1, max_exp_per_cycle + 1):
+                # Registra o tempo inicial de execução
+                start_timer = time()
+
+                # Aplicação do algoritmo
+                best_global_population, best_local_population, best_global_fitness, best_local_fitness, all_mean_fitness, generation = hill_climbing(
+                    fitness_func=fitness_func,
+                    target_value=target_value,
+                    is_min=is_min,
+                    bounds=bounds,
+                    max_gen=max_gen,
+                    max_patience=max_patience,
+                    step_size=step_size
+                )
+
+                # Registra o tempo total de execução do algoritmo
+                total_time = time() - start_timer
+
+                # Salvando os dados nas listas
+                experiment_best_fitness.append(np.max(best_local_fitness))
+                experiment_best_generation.append(generation)
+                experiment_exec_time.append(total_time)
+
+                # Gerando o gráfico do experimento escolhido aleatoriamente
+                if num_experiment == plot_rand_num:
+                    # print(best_fitness, '\n', all_mean_fitness)
+
+                    # Plota o gráfico
+                    plot_experiment(
+                        filename=filename,
+                        alg_acronym='HC',
+                        type_plot='normal',
+                        num_cycle=num_cycle,
+                        num_experiment=num_experiment,
+                        population_size=step_size,
+                        all_mean_fitness=all_mean_fitness,
+                        best_fitness=best_global_fitness
+                    )
+
+            # Salvando os dados nas listas
+            cycle_best_fitness.append([
+                step_size,
+                0.0,
+                0.0,
+                np.mean(experiment_best_fitness),
+                np.median(experiment_best_fitness),
+                np.max(experiment_best_fitness),
+                np.min(experiment_best_fitness)
+            ])
+            cycle_best_generation.append([
+                step_size,
+                0.0,
+                0.0,
+                np.mean(experiment_best_generation),
+                np.median(experiment_best_generation),
+                np.min(experiment_best_generation),
+                np.max(experiment_best_generation)
+            ])
+            cycle_exec_time.append([
+                step_size,
+                0.0,
+                0.0,
+                np.mean(experiment_exec_time),
+                np.median(experiment_exec_time),
+                np.min(experiment_exec_time),
+                np.max(experiment_exec_time)
+            ])
+
+            # print(experiment_best_fitness, '\n', experiment_best_generation, '\n', experiment_exec_time)
+
+        # print(cycle_best_fitness, '\n', cycle_best_generation, '\n', cycle_exec_time)
+
+        # Salva os resultados nos arquivos específicos
+
+        # Tabela de Aptidão
+        csv_table_experiment(
+            filename=filename,
+            alg_acronym='HC',
+            type_exp='aptidao',
+            num_cycle=num_cycle,
+            rows=cycle_best_fitness
+        )
+
+        # Tabela de Geração
+        csv_table_experiment(
+            filename=filename,
+            alg_acronym='HC',
+            type_exp='geracao',
+            num_cycle=num_cycle,
+            rows=cycle_best_generation
+        )
+
+        # Tabela de Tempo de Execução
+        csv_table_experiment(
+            filename=filename,
+            alg_acronym='HC',
+            type_exp='tempo',
+            num_cycle=num_cycle,
+            rows=cycle_exec_time
+        )
+
+        # Ciclo 1: variação de tam. população, mesma taxas
+        if num_cycle == 1:
+            # Recuperando todas as médias de gerações, em ordem de tam. população
+            all_mean_generation = np.array(cycle_best_generation)[:, 3]
+
+            # Seleciona o melhor tam. população após término do primeiro ciclo
+            idx_min_mean_generation = np.argmin(all_mean_generation)
+
+            # Reescreve o vetor de tamanho da população com a melhor selecionada
+            step_size_vals = np.array([step_size_vals[idx_min_mean_generation]])
+    
+
+    ########################################
+    #!        Recozimento Simulado        !#
+    ########################################
+        
+    step_size_vals = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
+    
+    # Definição das variáveis específicas
+    t_initial = 0.01
+    beta = 0.8
+
+    # Realização de cada ciclo
+    for num_cycle in range(1, max_cycle + 1):
+        # Armazenar as melhores aptidões por experimento de TODAS as populações
+        # - Formato: [[tam. pop., crossover, mutação, média, mediana, melhor, pior], ...]
+        cycle_best_fitness = []
+
+        # Armazenar as melhores gerações por experimento de TODAS as populações
+        # - Formato: [[tam. pop., crossover, mutação, média, mediana, mínimo, máximo], ...]
+        cycle_best_generation = []
+
+        # Armazenar o tempo de execução por experimento de TODAS as populações
+        # - Formato: [[tam. pop., crossover, mutação, média, mediana, mínimo, máximo], ...]
+        cycle_exec_time = []
+
+        # Percorre cada taxa de variação
+        for rate_idx, step_size in enumerate(step_size_vals):
+            # Armazenar as melhores aptidões de uma população
+            experiment_best_fitness = []
+
+            # Armazenar as melhores gerações de uma população
+            experiment_best_generation = []
+
+            # Armazenar o tempo de execução de uma população
+            experiment_exec_time = []
+
+            # Obtendo um valor aletório para plotar um gráfico de um dos experimentos
+            plot_rand_num = np.random.randint(1, max_exp_per_cycle + 1)
+
+            # print(rate_idx, ' ', population_size, ' ', crossover_rate,' ', mutation_rate)
+
+            # Percorre o número máximo de experimentos
+            for num_experiment in range(1, max_exp_per_cycle + 1):
+                # Registra o tempo inicial de execução
+                start_timer = time()
+
+                # Aplicação do algoritmo
+                best_global_population, best_local_population, best_global_fitness, best_local_fitness, all_mean_fitness, generation = simulated_annealing(
+                    fitness_func=fitness_func,
+                    target_value=target_value,
+                    is_min=is_min,
+                    bounds=bounds,
+                    max_gen=max_gen,
+                    max_patience=max_patience,
+                    step_size=step_size,
+                    t_initial=t_initial,
+                    beta=beta
+                )
+
+                # Registra o tempo total de execução do algoritmo
+                total_time = time() - start_timer
+
+                # Salvando os dados nas listas
+                experiment_best_fitness.append(np.max(best_local_fitness))
+                experiment_best_generation.append(generation)
+                experiment_exec_time.append(total_time)
+
+                # Gerando o gráfico do experimento escolhido aleatoriamente
+                if num_experiment == plot_rand_num:
+                    # print(best_fitness, '\n', all_mean_fitness)
+
+                    # Plota o gráfico
+                    plot_experiment(
+                        filename=filename,
+                        alg_acronym='RS',
+                        type_plot='normal',
+                        num_cycle=num_cycle,
+                        num_experiment=num_experiment,
+                        population_size=step_size,
+                        all_mean_fitness=all_mean_fitness,
+                        best_fitness=best_global_fitness
+                    )
+
+            # Salvando os dados nas listas
+            cycle_best_fitness.append([
+                step_size,
+                0.0,
+                0.0,
+                np.mean(experiment_best_fitness),
+                np.median(experiment_best_fitness),
+                np.max(experiment_best_fitness),
+                np.min(experiment_best_fitness)
+            ])
+            cycle_best_generation.append([
+                step_size,
+                0.0,
+                0.0,
+                np.mean(experiment_best_generation),
+                np.median(experiment_best_generation),
+                np.min(experiment_best_generation),
+                np.max(experiment_best_generation)
+            ])
+            cycle_exec_time.append([
+                step_size,
+                0.0,
+                0.0,
+                np.mean(experiment_exec_time),
+                np.median(experiment_exec_time),
+                np.min(experiment_exec_time),
+                np.max(experiment_exec_time)
+            ])
+
+            # print(experiment_best_fitness, '\n', experiment_best_generation, '\n', experiment_exec_time)
+
+        # print(cycle_best_fitness, '\n', cycle_best_generation, '\n', cycle_exec_time)
+
+        # Salva os resultados nos arquivos específicos
+
+        # Tabela de Aptidão
+        csv_table_experiment(
+            filename=filename,
+            alg_acronym='RS',
+            type_exp='aptidao',
+            num_cycle=num_cycle,
+            rows=cycle_best_fitness
+        )
+
+        # Tabela de Geração
+        csv_table_experiment(
+            filename=filename,
+            alg_acronym='RS',
+            type_exp='geracao',
+            num_cycle=num_cycle,
+            rows=cycle_best_generation
+        )
+
+        # Tabela de Tempo de Execução
+        csv_table_experiment(
+            filename=filename,
+            alg_acronym='RS',
+            type_exp='tempo',
+            num_cycle=num_cycle,
+            rows=cycle_exec_time
+        )
+
+        # Ciclo 1: variação de tam. população, mesma taxas
+        if num_cycle == 1:
+            # Recuperando todas as médias de gerações, em ordem de tam. população
+            all_mean_generation = np.array(cycle_best_generation)[:, 3]
+
+            # Seleciona o melhor tam. população após término do primeiro ciclo
+            idx_min_mean_generation = np.argmin(all_mean_generation)
+
+            # Reescreve o vetor de tamanho da população com a melhor selecionada
+            step_size_vals = np.array([step_size_vals[idx_min_mean_generation]])
+    
+    
+    ########################################
+    #!        Algoritmo Genético          !#
+    ########################################
+    
+    # Definindo as restrições descritas
+    fitness_func = f2
+    bounds = np.array([[-1.0, 1.0]])
+    target_value = float('inf')
+    max_cycle = 2
+    max_exp_per_cycle = 25
+    bitstring_size = np.array([11, 20])
+    is_min = False
+    max_gen = 1000
+    max_patience = 20
+    initial_population = np.array([20, 30, 40, 50], dtype=np.int64)
+    crossover_vals = np.array([0.5, 0.6, 0.7, 0.8], dtype=np.float64)
+    mutation_vals = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
+    elitism = False
+    elite_size = 3
+
+    ########################################
+    #!      Início dos Experimentos       !#
+    ########################################
+
+    # Realização de cada ciclo
+    for num_cycle in range(1, max_cycle + 1):
+        # Armazenar as melhores aptidões por experimento de TODAS as populações
+        # - Formato: [[tam. pop., crossover, mutação, média, mediana, melhor, pior], ...]
+        cycle_best_fitness = []
+
+        # Armazenar as melhores gerações por experimento de TODAS as populações
+        # - Formato: [[tam. pop., crossover, mutação, média, mediana, mínimo, máximo], ...]
+        cycle_best_generation = []
+
+        # Armazenar o tempo de execução por experimento de TODAS as populações
+        # - Formato: [[tam. pop., crossover, mutação, média, mediana, mínimo, máximo], ...]
+        cycle_exec_time = []
+
+        # Definição das taxas de crossover e mutação dos experimentos descritos
+        if num_cycle == 1:
+            # Ciclo 1: apenas o primeiro valor
+            crossover_idx = np.zeros(crossover_vals.shape[0], dtype=np.int32)
+            mutation_idx = np.zeros(mutation_vals.shape[0], dtype=np.int32)
+        elif num_cycle == 2:
+            # Ciclo 2: varia em pares
+            crossover_idx = np.arange(crossover_vals.shape[0], dtype=np.int32)
+            mutation_idx = np.arange(mutation_vals.shape[0], dtype=np.int32)
+
+        # Percorre cada tamanho de população
+        for rate_idx, population_size in enumerate(initial_population):
+            # Armazenar as melhores aptidões de uma população
+            experiment_best_fitness = []
+
+            # Armazenar as melhores gerações de uma população
+            experiment_best_generation = []
+
+            # Armazenar o tempo de execução de uma população
+            experiment_exec_time = []
+
+            # Definindo as taxas de crossover e mutação dos experimentos
+            crossover_rate = crossover_vals[crossover_idx[rate_idx]
+                                            ] if crossover_idx[rate_idx] != -1 else -1.0
+            mutation_rate = mutation_vals[mutation_idx[rate_idx]
+                                          ] if mutation_idx[rate_idx] != -1 else -1.0
+
+            # Obtendo um valor aletório para plotar um gráfico de um dos experimentos
+            plot_rand_num = np.random.randint(1, max_exp_per_cycle + 1)
+
+            # print(rate_idx, ' ', population_size, ' ', crossover_rate,' ', mutation_rate)
+
+            # Percorre o número máximo de experimentos
+            for num_experiment in range(1, max_exp_per_cycle + 1):
+                # Registra o tempo inicial de execução
+                start_timer = time()
+
+                # Geração de população inicial aleatória (estocástico)
+                gen_population = generate_population(
+                    bitstring_size=bitstring_size,
+                    population_size=population_size,
+                    bounds=bounds
+                )
+
+                # Aplicação do algoritmo
+                best_global_population, best_local_population, best_global_fitness, best_local_fitness, all_mean_fitness, generation = genetic_algorithm(
+                    initial_population=gen_population,
+                    fitness_func=fitness_func,
+                    target_value=target_value,
+                    is_min=is_min,
+                    bounds=bounds,
+                    bitstring_size=bitstring_size,
+                    max_gen=max_gen,
+                    max_patience=max_patience,
+                    elitism=elitism,
+                    elite_size=elite_size,
+                    crossover_rate=crossover_rate,
+                    mutation_rate=mutation_rate
+                )
+
+                # Registra o tempo total de execução do algoritmo
+                total_time = time() - start_timer
+
+                # Salvando os dados nas listas
+                experiment_best_fitness.append(np.max(best_local_fitness))
+                experiment_best_generation.append(generation)
+                experiment_exec_time.append(total_time)
+
+                # Gerando o gráfico do experimento escolhido aleatoriamente
+                if num_experiment == plot_rand_num:
+                    # print(best_fitness, '\n', all_mean_fitness)
+
+                    # Plota o gráfico
+                    plot_experiment(
+                        filename=filename,
+                        alg_acronym='AG',
+                        type_plot='normal',
+                        num_cycle=num_cycle,
+                        num_experiment=num_experiment,
+                        population_size=population_size,
+                        all_mean_fitness=all_mean_fitness,
+                        best_fitness=best_global_fitness,
+                        crossover_rate=crossover_rate,
+                        mutation_rate=mutation_rate
+                    )
+
+            # Salvando os dados nas listas
+            cycle_best_fitness.append([
+                population_size,
+                crossover_rate,
+                mutation_rate,
+                np.mean(experiment_best_fitness),
+                np.median(experiment_best_fitness),
+                np.max(experiment_best_fitness), 
+                np.min(experiment_best_fitness)
+            ])
+            cycle_best_generation.append([
+                population_size,
+                crossover_rate,
+                mutation_rate,
+                np.mean(experiment_best_generation),
+                np.median(experiment_best_generation),
+                np.min(experiment_best_generation),
+                np.max(experiment_best_generation)
+            ])
+            cycle_exec_time.append([
+                population_size,
+                crossover_rate,
+                mutation_rate,
+                np.mean(experiment_exec_time),
+                np.median(experiment_exec_time),
+                np.min(experiment_exec_time),
+                np.max(experiment_exec_time)
+            ])
+
+            # print(experiment_best_fitness, '\n', experiment_best_generation, '\n', experiment_exec_time)
+
+        # print(cycle_best_fitness, '\n', cycle_best_generation, '\n', cycle_exec_time)
+
+        # Salva os resultados nos arquivos específicos
+
+        # Tabela de Aptidão
+        csv_table_experiment(
+            filename=filename,
+            alg_acronym='AG',
+            type_exp='aptidao',
+            num_cycle=num_cycle,
+            rows=cycle_best_fitness
+        )
+
+        # Tabela de Geração
+        csv_table_experiment(
+            filename=filename,
+            alg_acronym='AG',
+            type_exp='geracao',
+            num_cycle=num_cycle,
+            rows=cycle_best_generation
+        )
+
+        # Tabela de Tempo de Execução
+        csv_table_experiment(
+            filename=filename,
+            alg_acronym='AG',
+            type_exp='tempo',
+            num_cycle=num_cycle,
+            rows=cycle_exec_time
+        )
+
+        # Ciclo 1: variação de tam. população, mesma taxas
+        if num_cycle == 1:
+            # Recuperando todas as médias de gerações, em ordem de tam. população
+            all_mean_generation = np.array(cycle_best_generation)[:, 3]
+
+            # Seleciona o melhor tam. população após término do primeiro ciclo
+            idx_min_mean_generation = np.argmin(all_mean_generation)
+
+            # Reescreve o vetor de tamanho da população com a melhor selecionada
+            initial_population = np.array(
+                [initial_population[idx_min_mean_generation]] * initial_population.shape[0], dtype=np.int64)
 
 
 if __name__ == '__main__':
