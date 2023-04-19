@@ -784,10 +784,6 @@ def main():
         - Fixa taxa de crossover e mutação para selecionar um tamanho de população para os próximos
         - Varia em par de taxas de crossover e mutação
         
-    Função: g(x, y) = (1 - x) ** 2 + 100 * (y - (x ** 2)) ** 2
-        - intervalo definido por: [[-10.0, 10.0], [-10.0, 10.0]]
-        - melhores valores esperados: [1, 1] = 0
-        
     Restrições:
         - 2 ciclos executados, sendo um para cada ponto na descrição
         - cada ciclo: 25 vezes de execução do algoritmo
@@ -800,6 +796,10 @@ def main():
         - crossover: 0.5, 0.6, 0.7, 0.8
         - mutação: 0.1, 0.2, 0.3, 0.4
         - sem elitismo
+        
+    Função: g(x, y) = (1 - x) ** 2 + 100 * (y - (x ** 2)) ** 2
+        - intervalo definido por: [[-10.0, 10.0], [-10.0, 10.0]]
+        - melhores valores esperados: [1, 1] = 0
     
     Formato dos dados salvos:
         - Gráfico (por ciclo): apenas um para cada população, do tipo "melhor aptidão x geração"
