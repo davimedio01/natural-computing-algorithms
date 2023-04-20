@@ -553,7 +553,7 @@ def csv_table_experiment(
     table_name = f'{alg_acronym}_{type_exp}_ciclo{num_cycle}.csv'
 
     # Definindo o título da tabela com base no tipo de experimento
-    table_title = 'Tamanho da População,Taxa de Crossover,Taxa de Mutação,Média,Mediana,'
+    table_title = 'Tamanho da População,Taxa de Crossover,Taxa de Mutação,Média,Desvio Padrão,Mediana,'
     if type_exp == 'aptidao':
         table_title = table_title + 'Melhor,Pior'
     elif type_exp == 'geracao' or type_exp == 'tempo':
@@ -726,27 +726,30 @@ def main():
             # Salvando os dados nas listas
             cycle_best_fitness.append([
                 population_size,
-                crossover_rate,
-                mutation_rate,
+                crossover_rate if crossover_rate > 0.0 else 0.0,
+                mutation_rate if mutation_rate > 0.0 else 0.0,
                 np.mean(experiment_best_fitness),
+                np.std(experiment_best_fitness),
                 np.median(experiment_best_fitness),
                 np.max(experiment_best_fitness),
                 np.min(experiment_best_fitness)
             ])
             cycle_best_generation.append([
                 population_size,
-                crossover_rate,
-                mutation_rate,
+                crossover_rate if crossover_rate > 0.0 else 0.0,
+                mutation_rate if mutation_rate > 0.0 else 0.0,
                 np.mean(experiment_best_generation),
+                np.std(experiment_best_generation),
                 np.median(experiment_best_generation),
                 np.min(experiment_best_generation),
                 np.max(experiment_best_generation)
             ])
             cycle_exec_time.append([
                 population_size,
-                crossover_rate,
-                mutation_rate,
+                crossover_rate if crossover_rate > 0.0 else 0.0,
+                mutation_rate if mutation_rate > 0.0 else 0.0,
                 np.mean(experiment_exec_time),
+                np.std(experiment_exec_time),
                 np.median(experiment_exec_time),
                 np.min(experiment_exec_time),
                 np.max(experiment_exec_time)

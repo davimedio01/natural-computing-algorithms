@@ -1,2 +1,2 @@
-Tamanho da População,Taxa de Crossover,Taxa de Mutação,Média,Mediana,Mínimo,Máximo
-0.4000,0.0000,0.0000,248.0000,156.0000,89.0000,1000.0000
+Tamanho da População,Taxa de Crossover,Taxa de Mutação,Média,Desvio Padrão,Mediana,Mínimo,Máximo
+0.2000,0.0000,0.0000,171.8000,63.8317,153.0000,99.0000,315.0000
