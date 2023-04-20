@@ -1501,7 +1501,7 @@ def main():
                 total_time = time() - start_timer
 
                 # Salvando os dados nas listas
-                experiment_best_fitness.append(np.max(best_local_fitness))
+                experiment_best_fitness.append(np.min(best_local_fitness) if is_min else np.max(best_local_fitness))
                 experiment_best_generation.append(generation)
                 experiment_exec_time.append(total_time)
 
@@ -1528,8 +1528,8 @@ def main():
                 0.0,
                 np.mean(experiment_best_fitness),
                 np.median(experiment_best_fitness),
-                np.max(experiment_best_fitness),
-                np.min(experiment_best_fitness)
+                np.max(experiment_best_fitness) if not is_min else np.min(experiment_best_fitness),
+                np.min(experiment_best_fitness) if not is_min else np.max(experiment_best_fitness)
             ])
             cycle_best_generation.append([
                 step_size,
@@ -1657,7 +1657,7 @@ def main():
                 total_time = time() - start_timer
 
                 # Salvando os dados nas listas
-                experiment_best_fitness.append(np.max(best_local_fitness))
+                experiment_best_fitness.append(np.min(best_local_fitness) if is_min else np.max(best_local_fitness))
                 experiment_best_generation.append(generation)
                 experiment_exec_time.append(total_time)
 
@@ -1684,8 +1684,8 @@ def main():
                 0.0,
                 np.mean(experiment_best_fitness),
                 np.median(experiment_best_fitness),
-                np.max(experiment_best_fitness),
-                np.min(experiment_best_fitness)
+                np.max(experiment_best_fitness) if not is_min else np.min(experiment_best_fitness),
+                np.min(experiment_best_fitness) if not is_min else np.max(experiment_best_fitness)
             ])
             cycle_best_generation.append([
                 step_size,
@@ -1853,7 +1853,7 @@ def main():
                 total_time = time() - start_timer
 
                 # Salvando os dados nas listas
-                experiment_best_fitness.append(np.max(best_local_fitness))
+                experiment_best_fitness.append(np.min(best_local_fitness) if is_min else np.max(best_local_fitness))
                 experiment_best_generation.append(generation)
                 experiment_exec_time.append(total_time)
 
@@ -1882,8 +1882,8 @@ def main():
                 mutation_rate,
                 np.mean(experiment_best_fitness),
                 np.median(experiment_best_fitness),
-                np.max(experiment_best_fitness), 
-                np.min(experiment_best_fitness)
+                np.max(experiment_best_fitness) if not is_min else np.min(experiment_best_fitness),
+                np.min(experiment_best_fitness) if not is_min else np.max(experiment_best_fitness)
             ])
             cycle_best_generation.append([
                 population_size,

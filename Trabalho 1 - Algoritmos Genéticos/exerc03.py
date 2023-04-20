@@ -773,7 +773,7 @@ def csv_table_experiment(
         table_title = table_title + 'Mínimo,Máximo'
 
     # Escrevendo o arquivo com o título
-    np.savetxt(fname=os.path.join(sub_directory, table_name), X=rows, fmt='%.4f', header=table_title,
+    np.savetxt(fname=os.path.join(sub_directory, table_name), X=rows, fmt='%.6f', header=table_title,
                delimiter=',', comments='', encoding='UTF-8')
 
 
@@ -913,10 +913,12 @@ def main():
                 total_time = time() - start_timer
 
                 # Salvando os dados nas listas
-                experiment_best_fitness.append(np.max(best_local_fitness))
+                experiment_best_fitness.append(np.min(best_local_fitness) if is_min else np.max(best_local_fitness))
                 experiment_best_generation.append(generation)
                 experiment_exec_time.append(total_time)
-
+                
+                #print(np.min(best_local_fitness), ' ', np.log10(np.min(best_local_fitness)))
+                
                 # Gerando o gráfico do experimento escolhido aleatoriamente
                 if num_experiment == plot_rand_num:
                     # print(best_fitness, '\n', all_mean_fitness)
@@ -934,7 +936,9 @@ def main():
                         crossover_rate=crossover_rate,
                         mutation_rate=mutation_rate
                     )
-
+            
+            # print(np.log10(experiment_best_fitness))
+            
             # Salvando os dados nas listas
             cycle_best_fitness.append([
                 population_size,
@@ -942,8 +946,8 @@ def main():
                 mutation_rate,
                 np.mean(experiment_best_fitness),
                 np.median(experiment_best_fitness),
-                np.max(experiment_best_fitness), 
-                np.min(experiment_best_fitness)
+                np.max(experiment_best_fitness) if not is_min else np.min(experiment_best_fitness),
+                np.min(experiment_best_fitness) if not is_min else np.max(experiment_best_fitness)
             ])
             cycle_best_generation.append([
                 population_size,
