@@ -7,7 +7,6 @@ RA: CCO230111
 """
 
 import numpy as np               # Matrizes e Funções Matemáticas
-import matplotlib.pyplot as plt  # Plotar Gráficos
 
 
 #####################################################
@@ -1389,8 +1388,8 @@ def main():
             - num. máx. 'paciência': 20
             - um valor de população inicial: gerado aleatoriamente do intervalo da função
             - taxa de variação inicial: 0.1, 0.2, 0.3, 0.4
-            - [Recozimento Simulado] 'T' inicial: 0.01
-            - [Recozimento Simulado] beta: 0.8
+            - [Recozimento Simulado] 'T': 0.01, 0.02, 0.03, 0.04
+            - [Recozimento Simulado] beta: 0.8, 0.7, 0.6, 0.5
     
     - Algoritmo Genético
         - Passos:
@@ -1605,8 +1604,8 @@ def main():
     step_size_vals = np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float64)
     
     # Definição das variáveis específicas
-    t_initial = 0.01
-    beta = 0.8
+    t_initial_vals = np.array([0.01, 0.02, 0.03, 0.04], dtype=np.float64)
+    beta_vals = np.array([0.8, 0.7, 0.6, 0.5], dtype=np.float64)
 
     # Realização de cada ciclo
     for num_cycle in range(1, max_cycle + 1):
@@ -1621,6 +1620,16 @@ def main():
         # Armazenar o tempo de execução por experimento de TODAS as populações
         # - Formato: [[tam. pop., crossover, mutação, média, mediana, mínimo, máximo], ...]
         cycle_exec_time = []
+        
+        # Definição de T e beta dos experimentos descritos
+        if num_cycle == 1:
+            # Ciclo 1: apenas o primeiro valor
+            t_initial_idx = np.zeros(t_initial_vals.shape[0], dtype=np.int32)
+            beta_idx = np.zeros(beta_vals.shape[0], dtype=np.int32)
+        elif num_cycle == 2:
+            # Ciclo 2: varia em pares
+            t_initial_idx = np.arange(t_initial_vals.shape[0], dtype=np.int32)
+            beta_idx = np.arange(beta_vals.shape[0], dtype=np.int32)
 
         # Percorre cada taxa de variação
         for rate_idx, step_size in enumerate(step_size_vals):
@@ -1633,11 +1642,15 @@ def main():
             # Armazenar o tempo de execução de uma população
             experiment_exec_time = []
 
+            # Definindo T e beta dos experimentos
+            t_initial = t_initial_vals[t_initial_idx[rate_idx]] if t_initial_idx[rate_idx] != -1 else -1.0
+            beta = beta_vals[beta_idx[rate_idx]] if beta_idx[rate_idx] != -1 else -1.0
+            
             # Obtendo um valor aletório para plotar um gráfico de um dos experimentos
             plot_rand_num = np.random.randint(1, max_exp_per_cycle + 1)
 
             # print(rate_idx, ' ', population_size, ' ', crossover_rate,' ', mutation_rate)
-
+            
             # Percorre o número máximo de experimentos
             for num_experiment in range(1, max_exp_per_cycle + 1):
                 # Registra o tempo inicial de execução
@@ -1677,14 +1690,16 @@ def main():
                         num_experiment=num_experiment,
                         population_size=step_size,
                         all_mean_fitness=all_mean_fitness,
-                        best_fitness=best_global_fitness
+                        best_fitness=best_global_fitness,
+                        crossover_rate = t_initial,
+                        mutation_rate = beta
                     )
 
             # Salvando os dados nas listas
             cycle_best_fitness.append([
                 step_size,
-                0.0,
-                0.0,
+                t_initial,
+                beta,
                 np.mean(experiment_best_fitness),
                 np.std(experiment_best_fitness),
                 np.median(experiment_best_fitness),
@@ -1693,8 +1708,8 @@ def main():
             ])
             cycle_best_generation.append([
                 step_size,
-                0.0,
-                0.0,
+                t_initial,
+                beta,
                 np.mean(experiment_best_generation),
                 np.std(experiment_best_generation),
                 np.median(experiment_best_generation),
@@ -1703,8 +1718,8 @@ def main():
             ])
             cycle_exec_time.append([
                 step_size,
-                0.0,
-                0.0,
+                t_initial,
+                beta,
                 np.mean(experiment_exec_time),
                 np.std(experiment_exec_time),
                 np.median(experiment_exec_time),
@@ -1754,7 +1769,7 @@ def main():
             idx_min_mean_generation = np.argmin(all_mean_generation)
 
             # Reescreve o vetor de tamanho da população com a melhor selecionada
-            step_size_vals = np.array([step_size_vals[idx_min_mean_generation]])
+            step_size_vals = np.array([step_size_vals[idx_min_mean_generation]] * t_initial_vals.shape[0])
     
     
     ########################################

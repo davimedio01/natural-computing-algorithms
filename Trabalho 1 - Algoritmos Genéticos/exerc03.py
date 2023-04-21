@@ -7,7 +7,6 @@ RA: CCO230111
 """
 
 import numpy as np               # Matrizes e Funções Matemáticas
-import matplotlib.pyplot as plt  # Plotar Gráficos
 
 
 #####################################################
