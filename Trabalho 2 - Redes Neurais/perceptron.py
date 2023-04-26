@@ -7,6 +7,7 @@ RA: CCO230111
 """
 
 import numpy as np               # Matrizes e Funções Matemáticas
+import sklearn as sk             # Recuperar os Datasets
 
 #####################################################
 #              Funções de Avaliação                 #
@@ -24,6 +25,11 @@ import numpy as np               # Matrizes e Funções Matemáticas
 
 #####################################################
 #             Rede Neural: Perceptron               #
+#####################################################
+
+
+#####################################################
+#           RN: Perceptron Multi-Camadas            #
 #####################################################
 
 
