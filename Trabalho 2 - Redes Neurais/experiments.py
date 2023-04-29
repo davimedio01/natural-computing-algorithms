@@ -11,10 +11,12 @@ import sklearn.datasets as sk_data # Recuperar os Datasets
 from sklearn.preprocessing import StandardScaler  # Normalização dos Dados de Pré-Processamento com Z Score
 from sklearn.model_selection import train_test_split # Separar conjuntos de treinamento, testes e validação
 from sklearn.metrics import accuracy_score # Métrica de Acurácia para Experimentos
-import matplotlib.pyplot as plt # Criação de Gráficos
-#import pandas as pd # Manipulação e Visualização dos Datasets
 
 from perceptron import Perceptron # Rede Neural: Perceptron
+
+import matplotlib.pyplot as plt # Criação de Gráficos
+import pandas as pd # Manipulação e Visualização das Tabelas
+
 
 #####################################################
 #                  Base de Dados                    #
@@ -64,19 +66,17 @@ def load_wine_dataset() -> tuple[np.ndarray, np.ndarray]:
 ########################################
 
 # Treinamento do Perceptron (Experimento)
-def perceptron_experiment(
-    max_exp_per_cycle: int,
-    X: np.ndarray, 
+def run_experiment(
+    X: np.ndarray,
     y: np.ndarray,
     initial_W: np.ndarray,
-    initial_bias: float,
-    initial_learning_rate: float,
+    initial_bias: np.ndarray,
+    initial_learning_rate: np.ndarray,
+    max_it: int,
 ):
     """ Realização dos experimentos com Perceptron
 
     Args:
-        max_exp_per_cycle : int 
-            Número máximo de experimentos
         X : np.ndarray
             matriz 2D de forma (num_amostras, num_características) com cada linha representando uma amostra e cada coluna representando as características.
         y : np.ndarray
@@ -87,6 +87,8 @@ def perceptron_experiment(
             Valor inicial de bias do Perceptron, que é atualizado durante a fase de treinamento (fit).
         initial_learning_rate : float
             Taxa inicial de aprendizado para atualização dos pesos.
+        max_it : int
+            Número máximo de iterações como critério de parada.
             
     Notes:
         
@@ -161,21 +163,23 @@ def main():
     # Biblioteca para capturar o tempo de execução
     from time import time
 
+    # Definindo as condições gerais dos exercícios
+    max_cycle = 4
+    max_exp_per_cycle = 25
+    max_it = 1000
+    
     ########################################
     #!     Exercício 01: Iris Dataset     !#
     ########################################
 
-    # Definindo os atributos iniciais dos experimentos
+    # Definindo as condições iniciais do exercício
     filename = 'ex01'
-    max_cycle = 3
-    max_exp_per_cycle = 15
     X, y = load_iris_dataset()
-    W_initial = np.zeros(X.shape[1])
-    bias_initial = 0.0
-    learning_rate = 0.1
-    max_it = 100
+    W_initial = np.zeros((X.shape[0], X.shape[1]))
+    bias_initial = np.array([0.0, 0.1, 0.2, 0.3])
+    learning_rate_initial = np.array([0.1, 0.2, 0.3, 0.4])
 
-
+    print(W_initial)
 
     ########################################
     #!     Exercício 02: Wine Dataset     !#
