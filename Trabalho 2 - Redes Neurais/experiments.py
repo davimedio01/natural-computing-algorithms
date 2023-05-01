@@ -12,7 +12,7 @@ from sklearn.preprocessing import StandardScaler  # Normalização dos Dados de 
 from sklearn.model_selection import train_test_split # Separar conjuntos de treinamento, testes e validação
 from sklearn.metrics import accuracy_score, confusion_matrix # Métricas de Acurácia e Matriz de Confusão para Experimentos
 
-from perceptron import Perceptron # Rede Neural: Perceptron
+from perceptron import Perceptron
 
 import matplotlib.pyplot as plt # Criação de Gráficos
 import pandas as pd # Manipulação e Visualização das Tabelas
@@ -127,8 +127,8 @@ def run_cycle_experiments(
     
     # initial_W = np.random.uniform(size=(X.shape[1], n_class))
     # initial_bias = np.random.uniform(size=n_class)
-    initial_W = np.zeros(shape=(X.shape[1], n_class))
-    initial_bias = np.zeros(shape=n_class)
+    initial_W = np.zeros(shape=(n_class, X.shape[1]))
+    initial_bias = np.zeros(shape=(1, n_class))
     
     print(initial_W)
     print(initial_W.shape)
