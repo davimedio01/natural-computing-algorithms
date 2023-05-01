@@ -10,13 +10,15 @@ import numpy as np # Matrizes e Funções Matemáticas
 import sklearn.datasets as sk_data # Recuperar os Datasets
 from sklearn.preprocessing import StandardScaler  # Normalização dos Dados de Pré-Processamento com Z Score
 from sklearn.model_selection import train_test_split # Separar conjuntos de treinamento, testes e validação
-from sklearn.metrics import accuracy_score # Métrica de Acurácia para Experimentos
+from sklearn.metrics import accuracy_score, confusion_matrix # Métricas de Acurácia e Matriz de Confusão para Experimentos
 
 from perceptron import Perceptron # Rede Neural: Perceptron
 
 import matplotlib.pyplot as plt # Criação de Gráficos
 import pandas as pd # Manipulação e Visualização das Tabelas
 
+#! [Debug]
+from sklearn.metrics import classification_report # Métricas Gerais para Teste
 
 #####################################################
 #                  Base de Dados                    #
@@ -33,7 +35,7 @@ def load_iris_dataset() -> tuple[np.ndarray, np.ndarray]:
         (data, target) : (np.ndarray, np.ndarray)
             tupla de ndarray do tipo:
             data: matriz 2D de forma (num_amostras, num_características) com cada linha representando uma amostra e cada coluna representando as características.
-            target: matriz 1D de forma (num_amostras) contendo as amostras de destino.
+            target: matriz 1D de forma (num_classe_amostras) contendo o valor da classe das amostras de destino.
          
     """
 
@@ -51,7 +53,7 @@ def load_wine_dataset() -> tuple[np.ndarray, np.ndarray]:
         (data, target) : (np.ndarray, np.ndarray)
             tupla de ndarray do tipo:
             data: matriz 2D de forma (num_amostras, num_características) com cada linha representando uma amostra e cada coluna representando as características.
-            target: matriz 1D de forma (num_amostras) contendo as amostras de destino.
+            target: matriz 1D de forma (num_classe_amostras) contendo o valor da classe das amostras de destino.
          
     """
 
@@ -65,31 +67,145 @@ def load_wine_dataset() -> tuple[np.ndarray, np.ndarray]:
 #            Experimentos              #
 ########################################
 
-# Treinamento do Perceptron (Experimento)
-def run_experiment(
+
+# Executa os ciclos propostos, cada qual com vários experimentos
+def run_cycle_experiments(
+    filename: str,
+    max_cycle: int,
+    max_exp_per_cycle: int,
+    max_epoch: int,
+    max_patience: int,
     X: np.ndarray,
     y: np.ndarray,
+    initial_learning_rate: np.ndarray,
+):
+    """Executa todos os 'max_cycle' ciclos dos experimentos propostos.
+    Cada ciclo possui 'max_exp_per_cycle' de experimentos executados.
+
+    Args:
+        filename : str 
+            Nome do arquivo/exercicio (ex: 'ex01')
+        max_cycle : int
+            Número máximo de ciclos de execução.
+        max_exp_per_cycle : int
+            Número máximo de experimentos executados por ciclo.
+        X : np.ndarray
+            Matriz 2D de forma (num_amostras, num_características) com cada linha representando uma amostra e cada coluna representando as características.
+        y : np.ndarray
+            Vetor de forma (num_classe_amostras) contendo o valor da classe das amostras de destino.   
+        initial_learning_rate : np.ndarray (float)
+            Vetor contendo os valores iniciais de "learning_rate" para cada ciclo de execução do algoritmo.
+        max_epoch : int
+            Número máximo de épocas/iterações como critério de parada do algoritmo.
+        max_patience : int
+            Número máximo de "paciência" como critério de parada do algoritmo.
+        
+    Notes:
+        O pré-processamento do Perceptron, para um exercício, ocorre nesta função.
+    """
+        
+    # Biblioteca para capturar o tempo de execução
+    from time import time
+
+    # Obtendo a quantidade de classes do conj. amostras
+    n_class = np.unique(y).shape[0]
+    
+    # Normalizando os dados com Z Score
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
+        
+    # Separando os subconjuntos de treinamento (70%), validação (15%) e teste (15%)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7)#, random_state=42)
+    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5)#, random_state=42)
+    
+    # print(X_train, '\n', y_train, '\n', X_train.shape, ' ', y_train.shape)
+    # print(X_val, '\n', y_val, '\n', X_val.shape, ' ', y_val.shape)
+    # print(X_test, '\n', y_test, '\n', X_test.shape, ' ', y_test.shape)
+    #!########################################################### 
+    #! Ciclos de Execução!
+    
+    # initial_W = np.random.uniform(size=(X.shape[1], n_class))
+    # initial_bias = np.random.uniform(size=n_class)
+    initial_W = np.zeros(shape=(X.shape[1], n_class))
+    initial_bias = np.zeros(shape=n_class)
+    
+    my_dick = Perceptron(
+        initial_W, 
+        initial_bias, 
+        initial_learning_rate[1], 
+        n_class, 
+        max_epoch,
+        max_patience
+    )
+    my_dick.fit(X_train, y_train, X_val, y_val)
+    
+    plt.title('Convergência do Perceptron', loc='center')
+    plt.xlabel('Época', loc='center')
+    plt.ylabel('Taxas de Acero/Erro', loc='center')
+    plt.plot(my_dick.all_acc_val, label='Acerto', marker='.', linewidth=0.3)
+    plt.plot(my_dick.all_error_val, label='Erro', marker='*', linewidth=0.3)
+    plt.legend()
+    plt.show()
+    plt.close()
+    
+    my_dick_predict = my_dick.predict(X_test)
+    print(y_test)
+    print(y_test.shape)
+    print(my_dick_predict)
+    print(my_dick_predict.shape)
+    
+    print(classification_report(y_test, my_dick_predict, zero_division=True))
+    
+    for cycle in range(max_cycle):
+        
+        # Gerados por ciclo
+        initial_W = np.random.uniform(size=(X.shape[1], n_class))
+        initial_bias = np.random.uniform(size=n_class)
+
+        # print(initial_W)
+        # print(initial_W.shape)
+        # print(initial_bias)
+        # print(initial_bias.shape)
+
+        #!########################################################### -> Repetir para experimentos!
+        #! Experimentos do Ciclo!
+
+    
+    
+# Um Experimento: Treinamento do Perceptron
+def run_experiment(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_val: np.ndarray,
+    y_val: np.ndarray,
     initial_W: np.ndarray,
     initial_bias: np.ndarray,
     initial_learning_rate: np.ndarray,
-    max_it: int,
+    max_epoch: int,
+    max_patience: int
 ):
     """ Realização dos experimentos com Perceptron
 
     Args:
-        X : np.ndarray
-            matriz 2D de forma (num_amostras, num_características) com cada linha representando uma amostra e cada coluna representando as características.
-        y : np.ndarray
-            matriz 1D de forma (num_amostras) contendo as amostras de destino.
+        X_train : np.ndarray
+            Matriz 2D de forma (num_amostras, num_características) do subconjunto de treinamento
+        y_train : np.ndarray 
+            Vetor de forma (num_classe_amostras) com as saídas desejadas do subconjunto de treinamento
+        X_val : np.ndarray
+            Matriz 2D de forma (num_amostras, num_características) do subconjunto de validação
+        y_val : np.ndarray 
+            Vetor de forma (num_classe_amostras) com as saídas desejadas do subconjunto de validação
         initial_W : np.ndarray
             Vetor de pesos iniciais do Perceptron, que é atualizado durante a fase de treinamento (fit).
         initial_bias : float
             Valor inicial de bias do Perceptron, que é atualizado durante a fase de treinamento (fit).
         initial_learning_rate : float
             Taxa inicial de aprendizado para atualização dos pesos.
-        max_it : int
-            Número máximo de iterações como critério de parada.
-            
+        max_epoch : int
+            Número máximo de épocas/iterações como critério de parada.
+        max_patience : int
+            Número máximo de "paciência" como critério de parada do algoritmo.
+           
     Notes:
         
     """
@@ -135,38 +251,40 @@ def main():
     """Função principal do programa
     
     Restrições:
-        - Para cada ciclo, obtém os melhores pesos e taxas (bias e aprendizado)
-        - Após a execução total do ciclo, executa-se mais uma vez com os melhores parâmetros obtidos para salvar os dados
-        - Repete o processo para a quantidade total de ciclos
+        - Valores iniciais de W (pesos) e bias definidos aleatoriamente entre [0, 1)
+        - Taxa de "Learning Rate" fixa durante o treinamento do Perceptron
+        
         
     Descrição dos Experimentos:
-        - 3 ciclos executados
-        - cada ciclo: 15+1 vezes de execução do algoritmo
-        - conjunto de dados iniciais normalizado com z score
-        - valores aletórios para os subconjuntos de treinamento, validação e testes
+        - 4 ciclos executados
+        - cada ciclo: 25 vezes de execução do algoritmo
+        - conjunto de amostras iniciais normalizado com Z Score
+        - subconjuntos de treinamento, validação e testes com proporções respectivas de: 70%, 15% e 15%
         - num. máx. iterações/épocas: 1000
-        - valores iniciais de W (pesos): 0
-        - taxa inicial de "bias": 0
-        - taxa inicial de "Learning Rate": 0.1
+        - num. máx. "paciência" (estagnação do algoritmo): 10
+        - valores iniciais de W (pesos) por ciclo: aleatórios entre 0 e 1
+        - taxa inicial de "bias" por ciclo: aleatório entre 0 e 1
+        - taxas iniciais de "Learning Rate" para cada ciclo (índice corresponde ao ciclo): [1, 0.1, 0.01, 0.001]
         
     
     Formato dos dados salvos:
-        - Gráfico (por ciclo): erro médio quadrático da convergência com a última rede do ciclo
-        - Tabelas (por exercício): 
-            - matrizes de confusão: treinamento, validação e teste
-            - parâmetros iniciais e finais das redes: *pesos, *bias, taxa de aprendizado, taxas de acerto e erro
+        - Gráfico (por ciclo): erro médio quadrático da convergência (MSE do treino e MSE da validação) com a melhor rede do ciclo
+        - Tabelas (por ciclo): 
+            - melhor rede executada: parâmetros iniciais e finais (peso e bias), learning_rate, matrizes de confusão (treinamento, validação e teste)
+            - taxa de acerto/erro (todas as redes executadas): média, desvio padrão, mínimo, mediana, máximo
+            - número de épocas (todas as redes executadas): média, desvio padrão, mínimo, mediana, máximo
+            - tempo de execução (todas as redes executadas): média, desvio padrão, mínimo, mediana, máximo
     """
 
     #! [Debug] Definição de saída para mostrar as matrizes por completo no console se necessário.
     np.set_printoptions(threshold=np.inf)
 
-    # Biblioteca para capturar o tempo de execução
-    from time import time
-
-    # Definindo as condições gerais dos exercícios
+    # Definindo as condições gerais e comuns de todos exercícios
     max_cycle = 4
     max_exp_per_cycle = 25
-    max_it = 1000
+    max_epoch = 1000
+    max_patience = 100
+    initial_learning_rate = np.array([1, 0.1, 0.01, 0.001])
     
     ########################################
     #!     Exercício 01: Iris Dataset     !#
@@ -175,16 +293,37 @@ def main():
     # Definindo as condições iniciais do exercício
     filename = 'ex01'
     X, y = load_iris_dataset()
-    W_initial = np.zeros((X.shape[0], X.shape[1]))
-    bias_initial = np.array([0.0, 0.1, 0.2, 0.3])
-    learning_rate_initial = np.array([0.1, 0.2, 0.3, 0.4])
-
-    print(W_initial)
+    
+    # Execução dos ciclos do exercício
+    run_cycle_experiments(
+        filename=filename,
+        max_cycle=max_cycle,
+        max_exp_per_cycle=max_exp_per_cycle,
+        max_epoch=max_epoch,
+        max_patience=max_patience,
+        X=X,
+        y=y,
+        initial_learning_rate=initial_learning_rate
+    )
 
     ########################################
     #!     Exercício 02: Wine Dataset     !#
     ########################################
-
+    # # Definindo as condições iniciais do exercício
+    # filename = 'ex02'
+    # X, y = load_wine_dataset()
+    
+    # # Execução dos ciclos do exercício
+    # run_cycle_experiments(
+    #     filename=filename,
+    #     max_cycle=max_cycle,
+    #     max_exp_per_cycle=max_exp_per_cycle,
+    #     max_epoch=max_epochs,
+    #     max_patience=max_patience,
+    #     X=X,
+    #     y=y,
+    #     initial_learning_rate=initial_learning_rate
+    # )
 
 
     ########################################
