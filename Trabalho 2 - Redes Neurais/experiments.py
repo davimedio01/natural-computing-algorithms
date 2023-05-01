@@ -73,11 +73,11 @@ def run_cycle_experiments(
     filename: str,
     max_cycle: int,
     max_exp_per_cycle: int,
-    max_epoch: int,
-    max_patience: int,
     X: np.ndarray,
     y: np.ndarray,
     initial_learning_rate: np.ndarray,
+    max_epoch: int,
+    max_patience: int,
 ):
     """Executa todos os 'max_cycle' ciclos dos experimentos propostos.
     Cada ciclo possui 'max_exp_per_cycle' de experimentos executados.
@@ -115,19 +115,25 @@ def run_cycle_experiments(
     X = scaler.fit_transform(X)
         
     # Separando os subconjuntos de treinamento (70%), validação (15%) e teste (15%)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7)#, random_state=42)
-    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5)#, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7, random_state=42)
+    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=42)
     
     # print(X_train, '\n', y_train, '\n', X_train.shape, ' ', y_train.shape)
     # print(X_val, '\n', y_val, '\n', X_val.shape, ' ', y_val.shape)
     # print(X_test, '\n', y_test, '\n', X_test.shape, ' ', y_test.shape)
     #!########################################################### 
     #! Ciclos de Execução!
+    #!###########################################################
     
     # initial_W = np.random.uniform(size=(X.shape[1], n_class))
     # initial_bias = np.random.uniform(size=n_class)
     initial_W = np.zeros(shape=(X.shape[1], n_class))
     initial_bias = np.zeros(shape=n_class)
+    
+    print(initial_W)
+    print(initial_W.shape)
+    print(initial_bias)
+    print(initial_bias.shape)
     
     my_dick = Perceptron(
         initial_W, 
@@ -138,6 +144,11 @@ def run_cycle_experiments(
         max_patience
     )
     my_dick.fit(X_train, y_train, X_val, y_val)
+    
+    print(my_dick.W)
+    print(my_dick.W.shape)
+    print(my_dick.bias)
+    print(my_dick.bias.shape)
     
     plt.title('Convergência do Perceptron', loc='center')
     plt.xlabel('Época', loc='center')
@@ -167,49 +178,51 @@ def run_cycle_experiments(
         # print(initial_bias)
         # print(initial_bias.shape)
 
-        #!########################################################### -> Repetir para experimentos!
-        #! Experimentos do Ciclo!
+        #!###########################################################
+        #! Experimentos com Perceptron
+        #!###########################################################
+
 
     
     
-# Um Experimento: Treinamento do Perceptron
-def run_experiment(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-    X_val: np.ndarray,
-    y_val: np.ndarray,
-    initial_W: np.ndarray,
-    initial_bias: np.ndarray,
-    initial_learning_rate: np.ndarray,
-    max_epoch: int,
-    max_patience: int
-):
-    """ Realização dos experimentos com Perceptron
+# # Um Experimento: Treinamento do Perceptron
+# def run_experiment(
+#     X_train: np.ndarray,
+#     y_train: np.ndarray,
+#     X_val: np.ndarray,
+#     y_val: np.ndarray,
+#     initial_W: np.ndarray,
+#     initial_bias: np.ndarray,
+#     initial_learning_rate: np.ndarray,
+#     max_epoch: int,
+#     max_patience: int
+# ):
+#     """ Realização dos experimentos com Perceptron
 
-    Args:
-        X_train : np.ndarray
-            Matriz 2D de forma (num_amostras, num_características) do subconjunto de treinamento
-        y_train : np.ndarray 
-            Vetor de forma (num_classe_amostras) com as saídas desejadas do subconjunto de treinamento
-        X_val : np.ndarray
-            Matriz 2D de forma (num_amostras, num_características) do subconjunto de validação
-        y_val : np.ndarray 
-            Vetor de forma (num_classe_amostras) com as saídas desejadas do subconjunto de validação
-        initial_W : np.ndarray
-            Vetor de pesos iniciais do Perceptron, que é atualizado durante a fase de treinamento (fit).
-        initial_bias : float
-            Valor inicial de bias do Perceptron, que é atualizado durante a fase de treinamento (fit).
-        initial_learning_rate : float
-            Taxa inicial de aprendizado para atualização dos pesos.
-        max_epoch : int
-            Número máximo de épocas/iterações como critério de parada.
-        max_patience : int
-            Número máximo de "paciência" como critério de parada do algoritmo.
+#     Args:
+#         X_train : np.ndarray
+#             Matriz 2D de forma (num_amostras, num_características) do subconjunto de treinamento
+#         y_train : np.ndarray 
+#             Vetor de forma (num_classe_amostras) com as saídas desejadas do subconjunto de treinamento
+#         X_val : np.ndarray
+#             Matriz 2D de forma (num_amostras, num_características) do subconjunto de validação
+#         y_val : np.ndarray 
+#             Vetor de forma (num_classe_amostras) com as saídas desejadas do subconjunto de validação
+#         initial_W : np.ndarray
+#             Vetor de pesos iniciais do Perceptron, que é atualizado durante a fase de treinamento (fit).
+#         initial_bias : float
+#             Valor inicial de bias do Perceptron, que é atualizado durante a fase de treinamento (fit).
+#         initial_learning_rate : float
+#             Taxa inicial de aprendizado para atualização dos pesos.
+#         max_epoch : int
+#             Número máximo de épocas/iterações como critério de parada.
+#         max_patience : int
+#             Número máximo de "paciência" como critério de parada do algoritmo.
            
-    Notes:
+#     Notes:
         
-    """
-    return None
+#     """
+#     return None
 
 
 # Manipular arquivos CSV (tabelas)
@@ -299,11 +312,11 @@ def main():
         filename=filename,
         max_cycle=max_cycle,
         max_exp_per_cycle=max_exp_per_cycle,
-        max_epoch=max_epoch,
-        max_patience=max_patience,
         X=X,
         y=y,
-        initial_learning_rate=initial_learning_rate
+        initial_learning_rate=initial_learning_rate,
+        max_epoch=max_epoch,
+        max_patience=max_patience,
     )
 
     ########################################

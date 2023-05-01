@@ -135,7 +135,7 @@ class Perceptron:
                 y_train_pred = self.activation_function(np.dot(X_train[i], self.W) + self.bias)
 
                 # Determinando o erro para X_train[i]
-                error_train = ((y_train[i] - y_train_pred) ** 2) / y_train_pred.shape[0] 
+                error_train = y_train[i] - np.argmax(y_train_pred) 
                     # ((y_train[i] - y_train_pred) ** 2) / y_train_pred.shape[0] 
                     # # mean_squared_error(y_train[i], y_train_pred)
 
