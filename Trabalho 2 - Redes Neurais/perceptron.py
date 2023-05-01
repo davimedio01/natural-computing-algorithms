@@ -45,10 +45,14 @@ class Perceptron:
             Número máximo de iterações em que não houve melhora (padrão: 10)
         activation_function : function
             Função de ativação utilizada pelo Perceptron. Padrão: função limiar de passo.
-        * mse_train : np.ndarray *
+        mse_train : np.ndarray 
             Vetor que armazena os valores do erro médio quadrático (MSE) para o conjunto de treinamento. 
             Cada elemento do vetor corresponde ao MSE calculado após uma iteração (ou época) do algoritmo.
             Para o Perceptron, quanto menor o valor do MSE, melhor é o ajuste da rede aos dados de treinamento.
+        mse_val : np.ndarray 
+            Vetor que armazena os valores do erro médio quadrático (MSE) para o conjunto de validação. 
+            Cada elemento do vetor corresponde ao MSE calculado após uma iteração (ou época) do algoritmo.
+            Para o Perceptron, quanto menor o valor do MSE, melhor é o ajuste da rede aos dados de validação.
         all_acc_val : np.ndarray
             Vetor que armazena os valores das taxas de acerto para o conjunto de validação.
         all_error_val : np.ndarray
@@ -93,7 +97,8 @@ class Perceptron:
         self.max_epoch = max_epoch
         self.max_patience = max_patience
         self.activation_function = self.__softmax__
-        #self.mse_train = None
+        self.mse_train = None
+        self.mse_val = None
         self.all_acc_val = None
         self.all_error_val = None
 
@@ -111,8 +116,9 @@ class Perceptron:
         best_bias = np.copy(self.bias)
         best_acc_val= -1.0  # Melhor taxa de acerto do conj. validação
         
-        # # Inicializando os vetores de MSE para treinamento 
-        # self.mse_train = []
+        # # Inicializando os vetores de MSE para treinamento e validação
+        self.mse_train = []
+        self.mse_val = []
         
         # Inicializando o vetor das taxas acerto/erro da validação 
         self.all_acc_val = []
@@ -135,65 +141,63 @@ class Perceptron:
                 y_train_pred = self.activation_function(np.dot(X_train[i], self.W) + self.bias)
 
                 # Determinando o erro para X_train[i]
-                error_train = y_train[i] - np.argmax(y_train_pred) 
+                error_train = y_train[i] - np.argmax(y_train_pred)
                     # ((y_train[i] - y_train_pred) ** 2) / y_train_pred.shape[0] 
                     # # mean_squared_error(y_train[i], y_train_pred)
 
                 # Atualizando vetor de pesos
-                self.W += self.learning_rate * X_train[i].reshape(-1, 1) * error_train
+                self.W = self.W + (self.learning_rate * X_train[i].reshape(-1, 1) * error_train)
 
                 # Atualizando o bias
-                self.bias += self.learning_rate * error_train
+                self.bias = self.bias + (self.learning_rate * error_train)
 
                 # Acumulando o erro quadrático para treinamento
-                E_train += np.sum(error_train)
+                E_train += np.sum(error_train ** 2)
 
-            print(E_train)
-            # # Salvando o erro médio quadrático do treinamento de uma época
-            # self.mse_train.append(E_train)
-            # #print(np.array(self.mse_train))
+            # Salvando o erro médio quadrático do treinamento de uma época
+            #self.mse_train.append(E_train)
+            #print(E_train)
             
             ########################################
             #!          Fase de Validação         !#
             ########################################
             
+            # Erros acumulados da validação
+            E_val = 0.0
+            
+            # Calculando o erro médio quadrático da validação
+            for i in range(X_val.shape[0]):
+                # Obtendo a saída da rede para X_val[i]
+                y_val_pred = self.activation_function(np.dot(X_val[i], self.W) + self.bias)
+                
+                # Determinando o erro para X_val[i]
+                error_val = y_val[i] - np.argmax(y_val_pred) 
+                
+                # Acumulando o erro quadrático para treinamento
+                E_val += np.sum(error_val ** 2)
+            
             # Realizando a predição da validação
             y_val_pred = self.predict(X=X_val)
-            
+
             # Encontrando a acurácia atual (acerto e erro)
             acc_val = accuracy_score(y_true=y_val, y_pred=y_val_pred)
             error_val = 1 - acc_val
-            
-            # # Erros acumulados da validação
-            # E_val = 0.0
-            
-            # # Calculando o erro médio quadrático da validação
-            # for i in range(X_val.shape[0]):
-            #     # Obtendo a saída da rede para X_val[i]
-            #     y_val_pred = self.activation_function(X_val[i].dot(self.W) + self.bias)
-                
-            #     # Determinando o erro para X_val[i]
-            #     error_val = ((y_val[i] - y_val_pred) ** 2) / y_val_pred.shape[0]
-                
-            #     # Acumulando o erro quadrático para treinamento
-            #     E_val += np.sum(error_val)
-  
-            # # Salvando o erro médio quadrático da validação de uma época
-            # #self.mse_val.append(E_val / n_samples_val)
 
-            # # Modificando hiperparâmetros (pesos e bias) com base no MSE acumulativo
-            # cumulative_mse_val = E_val
-            
+            # Modificando hiperparâmetros (pesos e bias) com base no MSE acumulativo
             if acc_val > best_acc_val:
                 # Caso o erro tenha melhorado, salva os valores obtidos da rede
                 best_W = np.copy(self.W)
                 best_bias = np.copy(self.bias)
                 best_acc_val = acc_val
+                self.mse_train.append(E_train)
+                self.mse_val.append(E_val)
                 self.all_acc_val.append(acc_val)
                 self.all_error_val.append(error_val)
                 patience = 1
             else:
                 # Caso o erro tenha piorado, aumenta a paciência (rede estagnada)
+                self.mse_train.append(self.mse_train[-1])
+                self.mse_val.append(self.mse_val[-1])
                 self.all_acc_val.append(self.all_acc_val[-1])
                 self.all_error_val.append(self.all_error_val[-1])
                 patience += 1
@@ -202,7 +206,8 @@ class Perceptron:
             epoch += 1
 
         # Convertendo os erros salvos para NumPy
-        #self.mse_train = np.array(self.mse_train)
+        self.mse_train = np.array(self.mse_train)
+        self.mse_val = np.array(self.mse_val)
         self.all_acc_val = np.array(self.all_acc_val)
         self.all_error_val = np.array(self.all_error_val)
         
