@@ -141,7 +141,6 @@ def run_perceptron_cycle_experiments(
     #!###########################################################  
     for cycle in range(max_cycle):
  
-        
         # Gerados por ciclo
         initial_W = np.random.uniform(size=(X.shape[1], n_class))
         initial_bias = np.random.uniform(size=n_class)
