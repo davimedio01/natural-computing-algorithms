@@ -13,6 +13,7 @@ from sklearn.model_selection import train_test_split # Separar conjuntos de trei
 from sklearn.metrics import accuracy_score, confusion_matrix # Métricas de Acurácia e Matriz de Confusão para Experimentos
 
 from perceptron import Perceptron
+from sklearn.preprocessing import OneHotEncoder # Abordagem: "Um vs Todos" (OVR) necessária ao Perceptron
 
 import matplotlib.pyplot as plt # Criação de Gráficos
 import pandas as pd # Manipulação e Visualização das Tabelas
@@ -113,27 +114,30 @@ def run_cycle_experiments(
     # Normalizando os dados com Z Score
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
+    
+    # Aplicando "One Hot Encoder": abordagem "One vs All"
+    y = OneHotEncoder(sparse_output=False).fit_transform(y.reshape(-1, 1)).astype(int)
         
     # Separando os subconjuntos de treinamento (70%), validação (15%) e teste (15%)
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7, random_state=42)
     X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=42)
     
+    # Aplicando "One Hot Encoder": abordagem "One vs All"
+    # y_train = OneHotEncoder(sparse_output=False).fit_transform(y_train.reshape(-1, 1)).astype(int)
+    # y_test = OneHotEncoder(sparse_output=False).fit_transform(y_test.reshape(-1, 1)).astype(int)
+    # y_val = OneHotEncoder(sparse_output=False).fit_transform(y_val.reshape(-1, 1)).astype(int)
+    
     # print(X_train, '\n', y_train, '\n', X_train.shape, ' ', y_train.shape)
     # print(X_val, '\n', y_val, '\n', X_val.shape, ' ', y_val.shape)
     # print(X_test, '\n', y_test, '\n', X_test.shape, ' ', y_test.shape)
+    
     #!########################################################### 
     #! Ciclos de Execução!
-    #!###########################################################
-    
-    # initial_W = np.random.uniform(size=(X.shape[1], n_class))
-    # initial_bias = np.random.uniform(size=n_class)
-    initial_W = np.zeros(shape=(n_class, X.shape[1]))
-    initial_bias = np.zeros(shape=(1, n_class))
-    
-    print(initial_W)
-    print(initial_W.shape)
-    print(initial_bias)
-    print(initial_bias.shape)
+    #!###########################################################  
+    initial_W = np.random.uniform(size=(X.shape[1], n_class))
+    initial_bias = np.random.uniform(size=n_class)
+    initial_W = np.zeros(shape=(X.shape[1], n_class))
+    initial_bias = np.zeros(shape=n_class)
     
     my_dick = Perceptron(
         initial_W, 
@@ -145,41 +149,23 @@ def run_cycle_experiments(
     )
     my_dick.fit(X_train, y_train, X_val, y_val)
     
-    print(my_dick.W)
-    print(my_dick.W.shape)
-    print(my_dick.bias)
-    print(my_dick.bias.shape)
-    
     plt.title('Convergência do Perceptron', loc='center')
     plt.xlabel('Época', loc='center')
-    # plt.ylabel('Taxas de Acero/Erro', loc='center')
-    # plt.plot(my_dick.all_acc_val, label='Acerto', marker='.', linewidth=0.3)
-    # plt.plot(my_dick.all_error_val, label='Erro', marker='*', linewidth=0.3)
-    plt.ylabel('Erro Acumulado', loc='center')
-    plt.plot(my_dick.mse_train, label='Treino', marker='.', linewidth=0.3)
-    plt.plot(my_dick.mse_val, label='Validação', marker='*', linewidth=0.3)
+    plt.ylabel('Erro Médio Acumulado (MSE)', loc='center')
+    plt.plot(my_dick.mse_train, label='Treino', marker='.', linewidth=0.8, c='b')
+    plt.plot(my_dick.mse_val, label='Validação', marker='.', linewidth=0.8, c='r')
     plt.legend()
     plt.show()
     plt.close()
     
     my_dick_predict = my_dick.predict(X_test)
-    print(y_test)
-    print(y_test.shape)
-    print(my_dick_predict)
-    print(my_dick_predict.shape)
-    
-    print(classification_report(y_test, my_dick_predict, zero_division=True))
-    
+    print(f"Acurácia no Conj. de Teste: {accuracy_score(y_test, my_dick_predict) * 100 :.2f}%")
+        
     for cycle in range(max_cycle):
         
         # Gerados por ciclo
         initial_W = np.random.uniform(size=(X.shape[1], n_class))
         initial_bias = np.random.uniform(size=n_class)
-
-        # print(initial_W)
-        # print(initial_W.shape)
-        # print(initial_bias)
-        # print(initial_bias.shape)
 
         #!###########################################################
         #! Experimentos com Perceptron
@@ -298,8 +284,8 @@ def main():
     # Definindo as condições gerais e comuns de todos exercícios
     max_cycle = 4
     max_exp_per_cycle = 25
-    max_epoch = 1000
-    max_patience = 100
+    max_epoch = 10000
+    max_patience = 1000
     initial_learning_rate = np.array([1, 0.1, 0.01, 0.001])
     
     ########################################
