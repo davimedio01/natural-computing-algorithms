@@ -60,6 +60,10 @@ class Perceptron:
             Vetor que armazena todos os valores das taxas de acerto para o conjunto de validação.
         all_error_val : np.ndarray
             Vetor que armazena todos os valores das taxas de erro para o conjunto de validação.
+        all_best_acc_val : np.ndarray
+            Vetor que armazena todos os melhores valores das taxas de acerto para o conjunto de validação.
+        all_best_error_val : np.ndarray
+            Vetor que armazena todos os melhores valores das taxas de erro para o conjunto de validação.
              
     Methods:
         fit (X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray)
@@ -88,7 +92,7 @@ class Perceptron:
         max_epoch: int,
         max_patience=100,
     ) -> None:
-        print(f"{'-'*50}")
+        print(f"\n{'-'*50}")
         print(f"{'Perceptron':^50}")
         print(f"{'-'*50}")
 
@@ -104,6 +108,8 @@ class Perceptron:
         self.mse_val = None
         self.all_acc_val = None
         self.all_error_val = None
+        self.all_best_acc_val = None
+        self.all_best_error_val = None
 
     def __step_function__(self, x: np.ndarray):
         return np.where(x > 0, 1, 0)
@@ -111,7 +117,7 @@ class Perceptron:
     def fit(self, X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray):
         #! Inicialização de W (pesos) e bias deve ocorrer antes da chamada da função. !#
         print(f"{'Treinando a rede'}", end='')
-        print(f"{'.'*35}")
+        print(f"{'.'*34}")
 
         # Inicializando variáveis dos melhores valores
         best_W = np.copy(self.W)
@@ -125,15 +131,19 @@ class Perceptron:
         # Inicializando o vetor das taxas acerto/erro da validação
         self.all_acc_val = np.array([])
         self.all_error_val = np.array([])
+        self.all_best_acc_val = np.array([])
+        self.all_best_error_val = np.array([])
         
         # Percorrendo as épocas/iterações
         epoch = 1    # Época atual
         patience = 1  # Paciência atual
 
         while epoch < self.max_epoch and patience < self.max_patience:
+            
             ########################################
             #!         Fase de Treinamento        !#
             ########################################
+            
             # Erros acumulados do treinamento
             E_train = 0.0
 
@@ -157,7 +167,6 @@ class Perceptron:
             # Salvando o erro médio quadrático do treinamento de uma época
             self.mse_train = np.append(self.mse_train, E_train / X_train.shape[0])
             
-
             ########################################
             #!          Fase de Validação         !#
             ########################################
@@ -198,14 +207,16 @@ class Perceptron:
                 patience += 1
             
             # Salvando os erros de acurácia (acerto/erro) para conj. validação
-            self.all_acc_val = np.append(self.all_acc_val, best_acc_val)
-            self.all_error_val = np.append(self.all_error_val, 1.0 - best_acc_val)
+            self.all_acc_val = np.append(self.all_acc_val, acc_val)
+            self.all_error_val = np.append(self.all_error_val, 1.0 - acc_val)
+            self.all_best_acc_val = np.append(self.all_best_acc_val, best_acc_val)
+            self.all_best_error_val = np.append(self.all_best_error_val, 1.0 - best_acc_val)
 
             # Incrementando a época/iteração
             epoch += 1
         
         print(f"{'Treinamento finalizado!'}")
-        print(f"{'-'*25}")
+        print(f"{'-'*50}")
 
         # Salvando os melhores valores obtidos
         self.W = np.copy(best_W)
@@ -213,24 +224,36 @@ class Perceptron:
 
         print(f"Melhores Pesos:\n{self.W}")
         print(f"Melhores Bias: {self.bias}")
-        print(f"Taxa Média de Acerto (Validação): {np.mean(self.all_acc_val).astype(float) * 100 :.2f}%")
-        print(f"Taxa Média de Erro (Validação): {np.mean(self.all_error_val).astype(float) * 100 :.2f}%")
-        print(f"{'-'*35}\n")
+        print(f"Taxa de Aprendizado: {self.learning_rate}")
+        print(f"Taxa Média de Acerto (Validação): {np.mean(self.all_best_acc_val).astype(float) * 100 :.2f}%")
+        print(f"Taxa Média de Erro (Validação): {np.mean(self.all_best_error_val).astype(float) * 100 :.2f}%")
+        print(f"{'-'*50}\n")
+
+    # def predict(self, X: np.ndarray) -> np.ndarray:
+    #     # Para cada dado X[i] do conj., vai obter a respectiva classe esperada, com base no peso e bias treinados
+    #     y_pred = np.zeros(X.shape[0])
+            
+    #     # Para predizer, basta aplicar os dados à função de ativação e o último bias obtido
+    #     for i in range(X.shape[0]):
+    #         # Calcula os dados com a função de ativação e pesos e bias de treinamento
+    #         y = self.activation_function(np.dot(X[i], self.W) + self.bias)
+
+    #         # Obtém a classe associada
+    #         y_pred[i] = np.argmax(y)
+        
+    #     # Acionando o "One vs All" para predição de cada classe
+    #     y_pred = OneHotEncoder(sparse_output=False).fit_transform(y_pred.reshape(-1, 1)).astype(int)
+
+    #     return y_pred
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         # Para cada dado X[i] do conj., vai obter a respectiva classe esperada, com base no peso e bias treinados
-        y_pred = np.zeros(X.shape[0])
-            
-        # Para predizer, basta aplicar os dados à função de ativação e o último bias obtido
-        for i in range(X.shape[0]):
-            # Calcula os dados com a função de ativação e pesos e bias de treinamento
-            y = self.activation_function(np.dot(X[i], self.W) + self.bias)
+        y = self.activation_function(np.dot(X, self.W) + self.bias)
 
-            # Obtém a classe associada
-            y_pred[i] = np.argmax(y)
+        # Obtém o valor do índice das classes, ou seja, os rótulos esperados
+        y_pred_idx = np.argmax(y, axis=1)
         
         # Acionando o "One vs All" para predição de cada classe
-        y_pred = OneHotEncoder(sparse_output=False).fit_transform(y_pred.reshape(-1, 1)).astype(int)
+        y_pred = OneHotEncoder(sparse_output=False, dtype=np.int32).fit_transform(y_pred_idx.reshape(-1, 1))
 
         return y_pred
-
