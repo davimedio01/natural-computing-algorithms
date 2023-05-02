@@ -9,7 +9,6 @@ RA: CCO230111
 import numpy as np                               # Matrizes e Funções Matemáticas
 from copy import copy as cp                      # Copiar objetos (não somente a referência)
 from sklearn.metrics import accuracy_score       # Cálculo da Acurácia
-from sklearn.preprocessing import OneHotEncoder  # Abordagem: "Um vs Todos" (OVR) necessária ao Perceptron
 
 #####################################################
 #             Rede Neural: Perceptron               #
@@ -123,6 +122,7 @@ class Perceptron:
         best_W = np.copy(self.W)
         best_bias = np.copy(self.bias)
         best_acc_val = -1.0 # Melhor taxa de acerto do conj. validação
+        best_mse_val = np.Inf # Melhor MSE do conj. validação
 
         # # Inicializando os vetores de MSE para treinamento e validação
         self.mse_train = np.array([])
@@ -188,19 +188,20 @@ class Perceptron:
             # Salvando o erro médio quadrático da validação de uma época
             self.mse_val = np.append(self.mse_val, E_val / X_val.shape[0])
 
-            # Realizando a predição da validação
+            # # Realizando a predição da validação
             y_val_pred = self.predict(X=X_val)
             
-            # Encontrando a acurácia atual (acerto e erro) para cada classe (One vs All)
+            # # Encontrando a acurácia atual (acerto e erro) para cada classe (One vs All)
             acc_val = accuracy_score(y_true=y_val, y_pred=y_val_pred)
             error_val = (1.0 - acc_val)
 
             # Modificando hiperparâmetros (pesos e bias) com base no MSE acumulativo
-            if acc_val > best_acc_val:
+            if self.mse_val[-1] < best_mse_val:
                 # Caso o erro tenha melhorado, salva os valores obtidos da rede
                 best_W = np.copy(self.W)
                 best_bias = np.copy(self.bias)
                 best_acc_val = cp(acc_val)
+                best_mse_val = cp(self.mse_val[-1])
                 patience = 1
             else:
                 # Caso o erro tenha piorado, aumenta a paciência (rede estagnada)
@@ -225,35 +226,10 @@ class Perceptron:
         print(f"Melhores Pesos:\n{self.W}")
         print(f"Melhores Bias: {self.bias}")
         print(f"Taxa de Aprendizado: {self.learning_rate}")
-        print(f"Taxa Média de Acerto (Validação): {np.mean(self.all_best_acc_val).astype(float) * 100 :.2f}%")
-        print(f"Taxa Média de Erro (Validação): {np.mean(self.all_best_error_val).astype(float) * 100 :.2f}%")
-        print(f"{'-'*50}\n")
-
-    # def predict(self, X: np.ndarray) -> np.ndarray:
-    #     # Para cada dado X[i] do conj., vai obter a respectiva classe esperada, com base no peso e bias treinados
-    #     y_pred = np.zeros(X.shape[0])
-            
-    #     # Para predizer, basta aplicar os dados à função de ativação e o último bias obtido
-    #     for i in range(X.shape[0]):
-    #         # Calcula os dados com a função de ativação e pesos e bias de treinamento
-    #         y = self.activation_function(np.dot(X[i], self.W) + self.bias)
-
-    #         # Obtém a classe associada
-    #         y_pred[i] = np.argmax(y)
-        
-    #     # Acionando o "One vs All" para predição de cada classe
-    #     y_pred = OneHotEncoder(sparse_output=False).fit_transform(y_pred.reshape(-1, 1)).astype(int)
-
-    #     return y_pred
+        print(f"Taxa Média de Acerto (Validação): {np.mean(self.all_acc_val).astype(float) * 100 :.2f}%")
+        print(f"Taxa Média de Erro (Validação): {np.mean(self.all_error_val).astype(float) * 100 :.2f}%")
+        print(f"{'-'*50}")
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         # Para cada dado X[i] do conj., vai obter a respectiva classe esperada, com base no peso e bias treinados
-        y = self.activation_function(np.dot(X, self.W) + self.bias)
-
-        # Obtém o valor do índice das classes, ou seja, os rótulos esperados
-        y_pred_idx = np.argmax(y, axis=1)
-        
-        # Acionando o "One vs All" para predição de cada classe
-        y_pred = OneHotEncoder(sparse_output=False, dtype=np.int32).fit_transform(y_pred_idx.reshape(-1, 1))
-
-        return y_pred
+        return self.activation_function(np.dot(X, self.W) + self.bias)
