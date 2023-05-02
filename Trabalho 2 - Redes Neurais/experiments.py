@@ -130,8 +130,8 @@ def run_perceptron_cycle_experiments(
     # Obtendo a quantidade de classes do conj. amostras
     n_class = y.shape[1]
    
-    # Separando os subconjuntos de treinamento (60%), validação (20%) e teste (20%)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
+    # Separando os subconjuntos de treinamento (70%), validação (15%) e teste (15%)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
     X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=42)
     
     #!########################################################### 
@@ -229,8 +229,10 @@ def run_perceptron_cycle_experiments(
         y_test_pred = best_perceptron.predict(X=X_test)
         
         cycle_best_perceptron.append([
-            best_perceptron.W, # W do ciclo
-            best_perceptron.bias, # Bias do ciclo
+            initial_W,     # W inicial do ciclo
+            initial_bias,  # Bias inicial do ciclo
+            best_perceptron.W, # W final do ciclo
+            best_perceptron.bias, # Bias final do ciclo
             best_perceptron.learning_rate, # Taxa de Learning Rate
             confusion_matrix(np.argmax(y_train, axis=1), np.argmax(y_train_pred, axis=1)), # Matriz de Confusão: Treinamento
             confusion_matrix(np.argmax(y_val, axis=1), np.argmax(y_val_pred, axis=1)),     # Matriz de Confusão: Validação
@@ -239,8 +241,10 @@ def run_perceptron_cycle_experiments(
         
         # Salvando outros dados relevantes do ciclo
         cycle_acc_test.append([
-            initial_W,                      # W do ciclo
-            initial_bias,                   # Bias do ciclo
+            initial_W,     # W inicial do ciclo
+            initial_bias,  # Bias inicial do ciclo
+            best_perceptron.W,  # W final do ciclo
+            best_perceptron.bias,  # Bias final do ciclo
             initial_learning_rate[cycle],   # Taxa de Learning Rate
             np.mean(experiment_acc_test),   # Média
             np.std(experiment_acc_test),    # Desvio Padrão
@@ -249,8 +253,10 @@ def run_perceptron_cycle_experiments(
             np.max(experiment_acc_test),    # Máximo
         ])
         cycle_error_test.append([
-            initial_W,                        # W do ciclo
-            initial_bias,                     # Bias do ciclo
+            initial_W,     # W inicial do ciclo
+            initial_bias,  # Bias inicial do ciclo
+            best_perceptron.W, # W final do ciclo
+            best_perceptron.bias, # Bias final do ciclo
             initial_learning_rate[cycle],     # Taxa de Learning Rate
             np.mean(experiment_error_test),   # Média
             np.std(experiment_error_test),    # Desvio Padrão
@@ -259,8 +265,10 @@ def run_perceptron_cycle_experiments(
             np.max(experiment_error_test),    # Máximo
         ])
         cycle_epoch_train.append([
-            initial_W,                         # W do ciclo
-            initial_bias,                      # Bias do ciclo
+            initial_W,     # W inicial do ciclo
+            initial_bias,  # Bias inicial do ciclo
+            best_perceptron.W,  # W final do ciclo
+            best_perceptron.bias,  # Bias final do ciclo
             initial_learning_rate[cycle],      # Taxa de Learning Rate
             np.mean(experiment_epoch_train),   # Média
             np.std(experiment_epoch_train),    # Desvio Padrão
@@ -269,8 +277,10 @@ def run_perceptron_cycle_experiments(
             np.max(experiment_epoch_train),    # Máximo
         ])
         cycle_exec_time.append([
-            initial_W,                       # W do ciclo
-            initial_bias,                    # Bias do ciclo
+            initial_W,     # W inicial do ciclo
+            initial_bias,  # Bias inicial do ciclo
+            best_perceptron.W,  # W final do ciclo
+            best_perceptron.bias,  # Bias final do ciclo
             initial_learning_rate[cycle],    # Taxa de Learning Rate
             np.mean(experiment_exec_time),   # Média
             np.std(experiment_exec_time),    # Desvio Padrão
@@ -410,7 +420,7 @@ def create_txt(
             Lista com os dados das linhas no total (ex: [['10', '0.1'], ['20', '0.2'])
         
     Notes:
-        Cria um arquivo csv da tabela com o seguinte nome: {alg_name_acronym}_{type_exp}.csv  
+        Cria um arquivo csv da tabela com o seguinte nome: {alg_name_acronym}_{type_exp}.txt 
         Salva em um subdiretório da pasta local do código com o nome: {filename}
     """
     
@@ -421,7 +431,7 @@ def create_txt(
     os.makedirs(sub_directory, exist_ok=True)
 
     # Definindo o nome do arquivo
-    table_name = f'{alg_name_acronym}_{type_exp}.csv'
+    table_name = f'{alg_name_acronym}_{type_exp}.txt'
     
     # Salvando no txt
     with open(os.path.join(sub_directory, table_name), 'w') as file:
@@ -500,17 +510,17 @@ def main():
     filename = 'ex02'
     X, y = load_wine_dataset()
     
-    # # Execução dos ciclos do exercício
-    # run_perceptron_cycle_experiments(
-    #     filename=filename,
-    #     max_cycle=max_cycle,
-    #     max_exp_per_cycle=max_exp_per_cycle,
-    #     X=X,
-    #     y=y,
-    #     initial_learning_rate=initial_learning_rate,
-    #     max_epoch=max_epoch,
-    #     max_patience=max_patience,
-    # )
+    # Execução dos ciclos do exercício
+    run_perceptron_cycle_experiments(
+        filename=filename,
+        max_cycle=max_cycle,
+        max_exp_per_cycle=max_exp_per_cycle,
+        X=X,
+        y=y,
+        initial_learning_rate=initial_learning_rate,
+        max_epoch=max_epoch,
+        max_patience=max_patience,
+    )
 
 
     ########################################
@@ -521,19 +531,212 @@ def main():
     filename = 'ex03'
     X, y = load_btsc_dataset()
     
-    # # Execução dos ciclos do exercício
-    # run_perceptron_cycle_experiments(
-    #     filename=filename,
-    #     max_cycle=max_cycle,
-    #     max_exp_per_cycle=max_exp_per_cycle,
-    #     X=X,
-    #     y=y,
-    #     initial_learning_rate=initial_learning_rate,
-    #     max_epoch=max_epoch,
-    #     max_patience=max_patience,
-    # )
+    ##################################
+    #*          Perceptron          *#
+    ##################################
+    
+    # Execução dos ciclos do exercício
+    run_perceptron_cycle_experiments(
+        filename=filename,
+        max_cycle=max_cycle,
+        max_exp_per_cycle=max_exp_per_cycle,
+        X=X,
+        y=y,
+        initial_learning_rate=initial_learning_rate,
+        max_epoch=max_epoch,
+        max_patience=max_patience,
+    )
+    
+    ##################################
+    #*     MultiLayer Perceptron    *#
+    ##################################
+    
+    # Importanto o MLP do SciKit-Learn
+    from sklearn.neural_network import MLPClassifier
 
+    # Biblioteca para capturar o tempo de execução
+    from time import time
 
+    # Normalizando os dados com Z Score
+    X = StandardScaler().fit_transform(X)
+    
+    # Separando os subconjuntos de treinamento (70%), validação (15%) e teste (15%)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=42)
+    
+    #!###########################################################
+    #! Ciclos de Execução!
+    #!###########################################################
+    # Variáveis para salvar as tabelas gerais do ciclo
+    cycle_best_mlp = []        # Dados espec. do melhor MLP
+    cycle_acc_test = []        # Taxa de Acerto do Conj. Teste
+    cycle_error_test = []      # Taxa de Erro do Conj. Teste
+    cycle_epoch_train = []     # Número de Épocas/Iterações do Treinamento
+    cycle_exec_time = []       # Tempo de Execução
+
+    for cycle in range(max_cycle):
+        print(f"{'-'*75}")
+        print(f"{'Ciclo %d' % (cycle+1):^75}")
+        print(f"{'-'*75}")
+
+        #!###########################################################
+        #! Experimentos com MLP
+        #!###########################################################
+        # Variáveis para salvar o gráfico de convergência do melhor MLP executado
+        best_mlp = None
+        best_acc_test = -1.0        # Melhor acurácia do conj. teste
+
+        # Variáveis para salvar os dados de cada experimento
+        experiment_acc_test = []    # Taxa de Acerto do Conj. Teste
+        experiment_error_test = []  # Taxa de Erro do Conj. Teste
+        experiment_epoch_train = []  # Número de Épocas/Iterações do Treinamento
+        experiment_exec_time = []   # Tempo de Execução
+
+        for num_experiment in range(max_exp_per_cycle):
+            # Registra o tempo inicial de execução
+            start_timer = time()
+
+            print(f"\n{'-'*50}")
+            print(f"{'MLP':^50}")
+            print(f"{'-'*50}")
+        
+            # Treinando o MLP
+            multi_perceptron = MLPClassifier(
+                hidden_layer_sizes=(X_train.shape[1] * 2 + 2),
+                activation='relu',
+                solver='adam',
+                learning_rate_init=initial_learning_rate[cycle],
+                max_iter=max_epoch,
+                random_state=42,
+                n_iter_no_change=max_patience,
+            )
+            multi_perceptron.fit(X_train, y_train)
+
+            # Testando e obtendo a acurácia
+            test_pred = multi_perceptron.predict(X=X_test)
+            acc_test = accuracy_score(y_true=y_test, y_pred=test_pred)
+            print(f"Acurácia no Conj. de Teste: {acc_test * 100 :.2f}%")
+
+            # Registra o tempo total de execução do algoritmo
+            total_time = time() - start_timer
+            print(f"Tempo de Execução (s): {total_time :.4f}")
+
+            # Salvando o melhor Perceptron para gráfico
+            if acc_test > best_acc_test:
+                best_mlp = cp(multi_perceptron)
+                best_acc_test = cp(acc_test)
+
+            # Salvando os dados para as tabelas
+            experiment_acc_test.append(acc_test)
+            experiment_error_test.append(1 - acc_test)
+            experiment_epoch_train.append(multi_perceptron.n_iter_)
+            experiment_exec_time.append(total_time)
+
+            print(f"{'-'*50}")
+
+        # Também, salvar dados relevantes da melhor rede executada
+        y_train_pred = best_mlp.predict(X=X_train)
+        y_val_pred = best_mlp.predict(X=X_val)
+        y_test_pred = best_mlp.predict(X=X_test)
+        
+        cycle_best_mlp.append([
+            best_mlp.coefs_, # W final do ciclo
+            best_mlp.intercepts_,  # Bias final do ciclo
+            initial_learning_rate[cycle],  # Taxa de Learning Rate
+            confusion_matrix(y_train, y_train_pred), # Matriz de Confusão: Treinamento
+            confusion_matrix(y_val, y_val_pred),     # Matriz de Confusão: Validação
+            confusion_matrix(y_test, y_test_pred),   # Matriz de Confusão: Teste
+        ])
+        
+        # Salvando outros dados relevantes do ciclo
+        cycle_acc_test.append([
+            best_mlp.coefs_,  # W final do ciclo
+            best_mlp.intercepts_,  # Bias final do ciclo
+            initial_learning_rate[cycle],   # Taxa de Learning Rate
+            np.mean(experiment_acc_test),   # Média
+            np.std(experiment_acc_test),    # Desvio Padrão
+            np.min(experiment_acc_test),    # Mínimo
+            np.median(experiment_acc_test),  # Mediana
+            np.max(experiment_acc_test),    # Máximo
+        ])
+        cycle_error_test.append([
+            best_mlp.coefs_,  # W final do ciclo
+            best_mlp.intercepts_,  # Bias final do ciclo
+            initial_learning_rate[cycle],     # Taxa de Learning Rate
+            np.mean(experiment_error_test),   # Média
+            np.std(experiment_error_test),    # Desvio Padrão
+            np.min(experiment_error_test),    # Mínimo
+            np.median(experiment_error_test),  # Mediana
+            np.max(experiment_error_test),    # Máximo
+        ])
+        cycle_epoch_train.append([
+            best_mlp.coefs_, # W final do ciclo
+            best_mlp.intercepts_, # Bias final do ciclo
+            initial_learning_rate[cycle],      # Taxa de Learning Rate
+            np.mean(experiment_epoch_train),   # Média
+            np.std(experiment_epoch_train),    # Desvio Padrão
+            np.min(experiment_epoch_train),    # Mínimo
+            np.median(experiment_epoch_train),  # Mediana
+            np.max(experiment_epoch_train),    # Máximo
+        ])
+        cycle_exec_time.append([
+            best_mlp.coefs_,  # W final do ciclo
+            best_mlp.intercepts_,  # Bias final do ciclo
+            initial_learning_rate[cycle],    # Taxa de Learning Rate
+            np.mean(experiment_exec_time),   # Média
+            np.std(experiment_exec_time),    # Desvio Padrão
+            np.min(experiment_exec_time),    # Mínimo
+            np.median(experiment_exec_time),  # Mediana
+            np.max(experiment_exec_time),    # Máximo
+        ])
+
+        print(f"{'-'*75}")
+        print(f"{'Fim do Ciclo %d' % (cycle+1):^75}")
+        print(f"{'-'*75}\n")
+
+    # Salvar os dados para as tabelas
+
+    # Melhor Perceptron
+    create_txt(
+        filename=filename,
+        alg_name_acronym='MLP',
+        type_exp='melhorP',
+        rows=cycle_best_mlp,
+    )
+
+    # Taxa de Acerto
+    create_txt(
+        filename=filename,
+        alg_name_acronym='MLP',
+        type_exp='acerto',
+        rows=cycle_acc_test,
+    )
+
+    # Taxa de Erro
+    create_txt(
+        filename=filename,
+        alg_name_acronym='MLP',
+        type_exp='erro',
+        rows=cycle_error_test,
+    )
+
+    # Número de Épocas
+    create_txt(
+        filename=filename,
+        alg_name_acronym='MLP',
+        type_exp='epocas',
+        rows=cycle_epoch_train,
+    )
+
+    # Tempo de Execução (s)
+    create_txt(
+        filename=filename,
+        alg_name_acronym='MLP',
+        type_exp='tempo',
+        rows=cycle_exec_time,
+    )
+    
+    
 
 if __name__ == '__main__':
     """Ponto de entrada do programa
