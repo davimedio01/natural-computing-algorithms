@@ -601,7 +601,7 @@ def main():
             print(f"{'-'*50}")
         
             # Treinando o MLP
-            multi_perceptron = MLPClassifier(
+            mlp = MLPClassifier(
                 hidden_layer_sizes=(X_train.shape[1] * 2),
                 activation='relu',
                 solver='adam',
@@ -610,10 +610,10 @@ def main():
                 random_state=42,
                 n_iter_no_change=max_patience,
             )
-            multi_perceptron.fit(X_train, y_train)
+            mlp.fit(X_train, y_train)
 
             # Testando e obtendo a acurácia
-            test_pred = multi_perceptron.predict(X=X_test)
+            test_pred = mlp.predict(X=X_test)
             acc_test = accuracy_score(y_true=y_test, y_pred=test_pred)
             print(f"Acurácia no Conj. de Teste: {acc_test * 100 :.2f}%")
 
@@ -623,13 +623,13 @@ def main():
 
             # Salvando o melhor Perceptron para gráfico
             if acc_test > best_acc_test:
-                best_mlp = cp(multi_perceptron)
+                best_mlp = cp(mlp)
                 best_acc_test = cp(acc_test)
 
             # Salvando os dados para as tabelas
             experiment_acc_test.append(acc_test)
             experiment_error_test.append(1 - acc_test)
-            experiment_epoch_train.append(multi_perceptron.n_iter_)
+            experiment_epoch_train.append(mlp.n_iter_)
             experiment_exec_time.append(total_time)
 
             print(f"{'-'*50}")
