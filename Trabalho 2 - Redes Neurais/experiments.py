@@ -415,7 +415,7 @@ def create_txt(
         alg_name_acronym : str
             Nome ou sigla do algoritmo executado (ex: 'Percp' - Perceptron)
         type_exp (str): tipo da tabela (ex: 'acerto')
-            -> Utilize: 'melhorP', 'acerto', 'erro', 'epoca', 'tempo'
+            -> Utilize: 'melhorP'/'melhorMLP', 'acerto', 'erro', 'epoca', 'tempo'
         rows : list [[dados, ...], ...] 
             Lista com os dados das linhas no total (ex: [['10', '0.1'], ['20', '0.2'])
         
@@ -602,7 +602,7 @@ def main():
         
             # Treinando o MLP
             multi_perceptron = MLPClassifier(
-                hidden_layer_sizes=(X_train.shape[1] * 2 + 2),
+                hidden_layer_sizes=(X_train.shape[1] * 2),
                 activation='relu',
                 solver='adam',
                 learning_rate_init=initial_learning_rate[cycle],
@@ -700,7 +700,7 @@ def main():
     create_txt(
         filename=filename,
         alg_name_acronym='MLP',
-        type_exp='melhorP',
+        type_exp='melhorMLP',
         rows=cycle_best_mlp,
     )
 

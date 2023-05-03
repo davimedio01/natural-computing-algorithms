@@ -9,6 +9,7 @@ RA: CCO230111
 import numpy as np                               # Matrizes e Funções Matemáticas
 from copy import copy as cp                      # Copiar objetos (não somente a referência)
 from sklearn.metrics import accuracy_score       # Cálculo da Acurácia
+#from scipy.special import softmax                # Função de Ativação: Limiar com Softmax
 
 #####################################################
 #             Rede Neural: Perceptron               #
@@ -46,7 +47,7 @@ class Perceptron:
         max_patience : int
             Número máximo de iterações em que não houve melhora (padrão: 100)
         activation_function : function
-            Função de ativação utilizada pelo Perceptron. Padrão: função limiar de passo.
+            Função de ativação utilizada pelo Perceptron. Padrão: função limiar de passo com softmax.
         mse_train : np.ndarray 
             Vetor que armazena os valores do erro médio quadrático (MSE) para o conjunto de treinamento. 
             Cada elemento do vetor corresponde ao MSE calculado após uma iteração (ou época) do algoritmo.
@@ -111,7 +112,11 @@ class Perceptron:
         self.all_best_error_val = None
 
     def __step_function__(self, x: np.ndarray):
-        return np.where(x > 0, 1, 0)
+        # Aplicando Softmax para evitar saídas com nenhuma ativação
+        softmax = np.exp(x - np.max(x))
+        softmax = softmax / np.sum(softmax)
+        
+        return np.where(softmax == np.max(softmax), 1, 0)
 
     def fit(self, X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray):
         #! Inicialização de W (pesos) e bias deve ocorrer antes da chamada da função. !#
@@ -151,7 +156,7 @@ class Perceptron:
             for i in range(X_train.shape[0]):
                 # Obtendo a saída da rede para X_train
                 y_train_pred = self.activation_function(np.dot(X_train[i], self.W) + self.bias)
-
+                
                 # Determinando o erro para X_train[i]
                 error_train = y_train[i] - y_train_pred
                 
@@ -232,4 +237,10 @@ class Perceptron:
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         # Para cada dado X[i] do conj., vai obter a respectiva classe esperada, com base no peso e bias treinados
-        return self.activation_function(np.dot(X, self.W) + self.bias)
+        y_pred = []
+        
+        for i in range(X.shape[0]):
+            # Obtendo a saída da rede para X[i]
+            y_pred.append(self.activation_function(np.dot(X[i], self.W) + self.bias))
+
+        return np.array(y_pred)
