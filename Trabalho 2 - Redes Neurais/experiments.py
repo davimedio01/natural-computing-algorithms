@@ -152,6 +152,9 @@ def run_perceptron_cycle_experiments(
         #!###########################################################
         #! Experimentos com Perceptron
         #!###########################################################
+        # Definindo números sempre aleatórios para NumPy durante a execução do código
+        np.random.seed()
+        
         # Geração do peso e bias aleatoriamente
         initial_W = np.random.uniform(size=(X.shape[1], n_class))
         initial_bias = np.random.uniform(size=n_class)
@@ -473,9 +476,6 @@ def main():
 
     #! [Debug] Definição de saída para mostrar as matrizes por completo no console se necessário.
     np.set_printoptions(threshold=np.inf)
-    
-    # Definindo números sempre aleatórios para NumPy durante a execução do código
-    np.random.seed(42)
     
     # Definindo as condições gerais e comuns de todos exercícios
     max_cycle = 4
