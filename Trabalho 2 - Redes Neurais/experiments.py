@@ -387,8 +387,10 @@ def plot_experiment(
     plt.ylabel('Erro Médio Quadrático (MSE)', loc='center')
 
     # Plotando o gráfico com base nos valores
-    plt.plot(mse_train, label='Treino', c='b')
-    plt.plot(mse_val, label='Validação', c='r')
+    if mse_train is not None:
+        plt.plot(mse_train, label='Treino', c='b')
+    if mse_val is not None:
+        plt.plot(mse_val, label='Validação', c='r')
 
     # Adiciona legenda
     plt.legend()
@@ -560,9 +562,11 @@ def main():
     # Normalizando os dados com Z Score
     X = StandardScaler().fit_transform(X)
     
-    # Separando os subconjuntos de treinamento (70%), validação (15%) e teste (15%)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-    X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=42)
+    # Separando os subconjuntos de treinamento (85%) e teste (15%)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
+    
+    # Salvando os dados de validação para matrizes de confusão posteriores
+    _, X_val, _, y_val = train_test_split(X_train, y_train, test_size=0.1765, random_state=42)
     
     #!###########################################################
     #! Ciclos de Execução!
@@ -585,6 +589,7 @@ def main():
         # Variáveis para salvar o gráfico de convergência do melhor MLP executado
         best_mlp = None
         best_acc_test = -1.0        # Melhor acurácia do conj. teste
+        best_num_experiment = -1    # Número do melhor experimento
 
         # Variáveis para salvar os dados de cada experimento
         experiment_acc_test = []    # Taxa de Acerto do Conj. Teste
@@ -600,15 +605,16 @@ def main():
             print(f"{'MLP':^50}")
             print(f"{'-'*50}")
         
-            # Treinando o MLP
+            # Treinando o MLP com conj. validação (15%) do conj. de treinamento (equivale 12,75%)
             mlp = MLPClassifier(
                 hidden_layer_sizes=(X_train.shape[1] * 2),
                 activation='relu',
                 solver='adam',
                 learning_rate_init=initial_learning_rate[cycle],
                 max_iter=max_epoch,
-                random_state=42,
                 n_iter_no_change=max_patience,
+                validation_fraction=0.1765,
+                random_state=42,
             )
             mlp.fit(X_train, y_train)
 
@@ -625,6 +631,7 @@ def main():
             if acc_test > best_acc_test:
                 best_mlp = cp(mlp)
                 best_acc_test = cp(acc_test)
+                best_num_experiment = cp(num_experiment)
 
             # Salvando os dados para as tabelas
             experiment_acc_test.append(acc_test)
@@ -634,6 +641,17 @@ def main():
 
             print(f"{'-'*50}")
 
+        # Após os experimentos, criar gráfico de conv. do melhor MLP
+        plot_experiment(
+            filename=filename, 
+            alg_name_acronym='MLP', 
+            num_cycle=cycle+1, 
+            num_experiment=best_num_experiment,
+            learning_rate=initial_learning_rate[cycle],
+            mse_train=np.array(mlp.loss_curve_), 
+            mse_val=None
+        )
+        
         # Também, salvar dados relevantes da melhor rede executada
         y_train_pred = best_mlp.predict(X=X_train)
         y_val_pred = best_mlp.predict(X=X_val)
