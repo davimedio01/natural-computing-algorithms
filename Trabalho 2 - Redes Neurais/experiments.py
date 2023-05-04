@@ -146,7 +146,7 @@ def run_perceptron_cycle_experiments(
     cycle_error_test = []      # Taxa de Erro do Conj. Teste
     cycle_epoch_train = []     # Número de Épocas/Iterações do Treinamento
     cycle_exec_time = []       # Tempo de Execução
-
+    
     for cycle in range(max_cycle):
         print(f"{'-'*75}")
         print(f"{'Ciclo %d' % (cycle+1):^75}")
@@ -155,12 +155,9 @@ def run_perceptron_cycle_experiments(
         #!###########################################################
         #! Experimentos com Perceptron
         #!###########################################################
-        # Definindo números sempre aleatórios para NumPy durante a execução do código
-        np.random.seed()
         
-        # Geração do peso e bias aleatoriamente
-        initial_W = np.random.uniform(size=(X.shape[1], n_class))
-        initial_bias = np.random.uniform(size=n_class)
+        # Definindo os mesmos números aleatórios para NumPy durante a execução do código
+        np.random.seed(42)
 
         # Variáveis para salvar o gráfico de convergência do melhor Perceptron local executado
         best_local_perceptron = None # Relativo a cada ciclo
@@ -174,6 +171,10 @@ def run_perceptron_cycle_experiments(
         experiment_exec_time = []   # Tempo de Execução
         
         for num_experiment in range(max_exp_per_cycle):
+            # Geração do peso e bias aleatoriamente
+            initial_W = np.random.uniform(size=(X.shape[1], n_class))
+            initial_bias = np.random.uniform(size=n_class)    
+            
             # Registra o tempo inicial de execução
             start_timer = time()
             
@@ -487,11 +488,11 @@ def main():
     np.set_printoptions(threshold=np.inf)
     
     # Definindo as condições gerais e comuns de todos exercícios
-    max_cycle = 4
-    max_exp_per_cycle = 25
     max_epoch = 1000
     max_patience = 10
     initial_learning_rate = np.array([1, 0.1, 0.01, 0.001])
+    max_cycle = initial_learning_rate.shape[0]
+    max_exp_per_cycle = 25
     
     ########################################
     #!     Exercício 01: Iris Dataset     !#
@@ -600,6 +601,10 @@ def main():
         #!###########################################################
         #! Experimentos com MLP
         #!###########################################################
+        
+        # Definindo os mesmos números aleatórios para NumPy durante a execução do código
+        np.random.seed(42)
+        
         # Variáveis para salvar o gráfico de convergência do melhor MLP executado
         best_local_mlp = None             # Melhor MLP (por ciclo)
         best_local_acc_test = -1.0        # Melhor acurácia do conj. teste (por ciclo)
@@ -628,7 +633,6 @@ def main():
                 max_iter=max_epoch,
                 n_iter_no_change=max_patience,
                 validation_fraction=0.1765,
-                random_state=42,
             )
             mlp.fit(X_train, y_train)
 
@@ -671,7 +675,7 @@ def main():
             np.median(experiment_acc_test),  # Mediana
             np.max(experiment_acc_test),    # Máximo
         ])
-        cycle_error_test.append([
+        cycle_error_test.append([  # ! Não usado no relatório
             best_local_mlp.coefs_,  # W final do ciclo
             best_local_mlp.intercepts_,  # Bias final do ciclo
             initial_learning_rate[cycle],     # Taxa de Learning Rate
