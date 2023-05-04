@@ -17,7 +17,6 @@ from perceptron import Perceptron
 from sklearn.preprocessing import OneHotEncoder # Abordagem: "Um vs Todos" (OVR) necessária ao Perceptron
 
 import matplotlib.pyplot as plt # Criação de Gráficos
-import pandas as pd # Manipulação e Visualização das Tabelas
 
 
 #####################################################
@@ -137,6 +136,10 @@ def run_perceptron_cycle_experiments(
     #!########################################################### 
     #! Ciclos de Execução!
     #!###########################################################  
+    # Variáveis para salvar o gráfico de convergência do melhor Perceptron local executado
+    best_global_perceptron = None # Relativo a todos os ciclos
+    best_global_acc_test = -1.0   # Melhor acurácia do conj. teste (todos os ciclos)
+    
     # Variáveis para salvar as tabelas gerais do ciclo
     cycle_best_perceptron = [] # Dados espec. do melhor Perceptron
     cycle_acc_test = []        # Taxa de Acerto do Conj. Teste
@@ -159,10 +162,10 @@ def run_perceptron_cycle_experiments(
         initial_W = np.random.uniform(size=(X.shape[1], n_class))
         initial_bias = np.random.uniform(size=n_class)
 
-        # Variáveis para salvar o gráfico de convergência do melhor Perceptron executado
-        best_perceptron = None
-        best_acc_test = -1.0        # Melhor acurácia do conj. teste
-        best_num_experiment = -1    # Número do melhor experimento
+        # Variáveis para salvar o gráfico de convergência do melhor Perceptron local executado
+        best_local_perceptron = None # Relativo a cada ciclo
+        best_local_acc_test = -1.0   # Melhor acurácia do conj. teste (por ciclo)
+        best_num_experiment = -1     # Número do melhor experimento
         
         # Variáveis para salvar os dados de cada experimento
         experiment_acc_test = []    # Taxa de Acerto do Conj. Teste
@@ -201,10 +204,10 @@ def run_perceptron_cycle_experiments(
             total_time = time() - start_timer
             print(f"Tempo de Execução (s): {total_time :.4f}")
             
-            # Salvando o melhor Perceptron para gráfico
-            if acc_test > best_acc_test:
-                best_perceptron = cp(perceptron)
-                best_acc_test = cp(acc_test)
+            # Salvando o melhor Perceptron local (por ciclo) para gráfico
+            if acc_test > best_local_acc_test:
+                best_local_perceptron = cp(perceptron)
+                best_local_acc_test = cp(acc_test)
                 best_num_experiment = cp(num_experiment)
 
             # Salvando os dados para as tabelas
@@ -214,40 +217,18 @@ def run_perceptron_cycle_experiments(
             experiment_exec_time.append(total_time)
 
             print(f"{'-'*50}")            
-
-        # Após os experimentos, criar gráfico de conv. do melhor Perceptron
-        plot_experiment(
-            filename=filename, 
-            alg_name_acronym='P', 
-            num_cycle=cycle+1, 
-            num_experiment=best_num_experiment,
-            learning_rate=best_perceptron.learning_rate,
-            mse_train=best_perceptron.mse_train, 
-            mse_val=best_perceptron.mse_val
-        )
         
-        # Também, salvar dados relevantes da melhor rede executada
-        y_train_pred = best_perceptron.predict(X=X_train)
-        y_val_pred = best_perceptron.predict(X=X_val)
-        y_test_pred = best_perceptron.predict(X=X_test)
-        
-        cycle_best_perceptron.append([
-            initial_W,     # W inicial do ciclo
-            initial_bias,  # Bias inicial do ciclo
-            best_perceptron.W, # W final do ciclo
-            best_perceptron.bias, # Bias final do ciclo
-            best_perceptron.learning_rate, # Taxa de Learning Rate
-            confusion_matrix(np.argmax(y_train, axis=1), np.argmax(y_train_pred, axis=1)), # Matriz de Confusão: Treinamento
-            confusion_matrix(np.argmax(y_val, axis=1), np.argmax(y_val_pred, axis=1)),     # Matriz de Confusão: Validação
-            confusion_matrix(np.argmax(y_test, axis=1), np.argmax(y_test_pred, axis=1)),   # Matriz de Confusão: Teste
-        ])
+        # Salvando o melhor Perceptron local (por ciclo) para gráfico
+        if best_local_acc_test > best_global_acc_test:
+            best_global_perceptron = cp(best_local_perceptron)
+            best_global_acc_test = cp(best_local_acc_test)
         
         # Salvando outros dados relevantes do ciclo
         cycle_acc_test.append([
             initial_W,     # W inicial do ciclo
             initial_bias,  # Bias inicial do ciclo
-            best_perceptron.W,  # W final do ciclo
-            best_perceptron.bias,  # Bias final do ciclo
+            best_local_perceptron.W,  # W final do ciclo
+            best_local_perceptron.bias,  # Bias final do ciclo
             initial_learning_rate[cycle],   # Taxa de Learning Rate
             np.mean(experiment_acc_test),   # Média
             np.std(experiment_acc_test),    # Desvio Padrão
@@ -255,11 +236,11 @@ def run_perceptron_cycle_experiments(
             np.median(experiment_acc_test), # Mediana
             np.max(experiment_acc_test),    # Máximo
         ])
-        cycle_error_test.append([
+        cycle_error_test.append([ #! Não usado no relatório
             initial_W,     # W inicial do ciclo
             initial_bias,  # Bias inicial do ciclo
-            best_perceptron.W, # W final do ciclo
-            best_perceptron.bias, # Bias final do ciclo
+            best_local_perceptron.W, # W final do ciclo
+            best_local_perceptron.bias, # Bias final do ciclo
             initial_learning_rate[cycle],     # Taxa de Learning Rate
             np.mean(experiment_error_test),   # Média
             np.std(experiment_error_test),    # Desvio Padrão
@@ -270,8 +251,8 @@ def run_perceptron_cycle_experiments(
         cycle_epoch_train.append([
             initial_W,     # W inicial do ciclo
             initial_bias,  # Bias inicial do ciclo
-            best_perceptron.W,  # W final do ciclo
-            best_perceptron.bias,  # Bias final do ciclo
+            best_local_perceptron.W,  # W final do ciclo
+            best_local_perceptron.bias,  # Bias final do ciclo
             initial_learning_rate[cycle],      # Taxa de Learning Rate
             np.mean(experiment_epoch_train),   # Média
             np.std(experiment_epoch_train),    # Desvio Padrão
@@ -282,8 +263,8 @@ def run_perceptron_cycle_experiments(
         cycle_exec_time.append([
             initial_W,     # W inicial do ciclo
             initial_bias,  # Bias inicial do ciclo
-            best_perceptron.W,  # W final do ciclo
-            best_perceptron.bias,  # Bias final do ciclo
+            best_local_perceptron.W,  # W final do ciclo
+            best_local_perceptron.bias,  # Bias final do ciclo
             initial_learning_rate[cycle],    # Taxa de Learning Rate
             np.mean(experiment_exec_time),   # Média
             np.std(experiment_exec_time),    # Desvio Padrão
@@ -291,12 +272,39 @@ def run_perceptron_cycle_experiments(
             np.median(experiment_exec_time), # Mediana
             np.max(experiment_exec_time),    # Máximo
         ])
-
+        
         print(f"{'-'*75}")
         print(f"{'Fim do Ciclo %d' % (cycle+1):^75}")
         print(f"{'-'*75}\n")
     
     # Salvar os dados para as tabelas
+    
+    # Após os experimentos, criar gráfico de conv. do melhor Perceptron
+    plot_experiment(
+        filename=filename, 
+        alg_name_acronym='P', 
+        num_cycle=cycle+1, 
+        num_experiment=best_num_experiment,
+        learning_rate=best_global_perceptron.learning_rate,
+        mse_train=best_global_perceptron.mse_train, 
+        mse_val=best_global_perceptron.mse_val
+    )
+    
+    # Também, salvar dados relevantes da melhor rede executada
+    y_train_pred = best_global_perceptron.predict(X=X_train)
+    y_val_pred = best_global_perceptron.predict(X=X_val)
+    y_test_pred = best_global_perceptron.predict(X=X_test)
+    
+    cycle_best_perceptron.append([
+        initial_W,     # W inicial do ciclo
+        initial_bias,  # Bias inicial do ciclo
+        best_global_perceptron.W, # W final do ciclo
+        best_global_perceptron.bias, # Bias final do ciclo
+        best_global_perceptron.learning_rate,  # Taxa de Learning Rate
+        confusion_matrix(np.argmax(y_train, axis=1), np.argmax(y_train_pred, axis=1)), # Matriz de Confusão: Treinamento
+        confusion_matrix(np.argmax(y_val, axis=1), np.argmax(y_val_pred, axis=1)),     # Matriz de Confusão: Validação
+        confusion_matrix(np.argmax(y_test, axis=1), np.argmax(y_test_pred, axis=1)),   # Matriz de Confusão: Teste
+    ])
     
     # Melhor Perceptron
     create_txt(
@@ -385,7 +393,8 @@ def plot_experiment(
     plot_name = f'{alg_name_acronym}_ciclo{num_cycle}_exp{num_experiment}_lr{learning_rate}.png'
 
     # Definindo os textos (nomes) do gráfico
-    plt.title('Convergência do Perceptron', loc='center')
+    title = 'Perceptron' if alg_name_acronym == 'P' else alg_name_acronym
+    plt.title('Convergência do ' + title, loc='center')
     plt.xlabel('Época', loc='center')
     plt.ylabel('Erro Médio Quadrático (MSE)', loc='center')
 
@@ -571,6 +580,11 @@ def main():
     #!###########################################################
     #! Ciclos de Execução!
     #!###########################################################
+
+    # Variáveis para salvar o gráfico de convergência do melhor MLP executado
+    best_global_mlp = None       # Melhor MLP (todos os ciclos)
+    best_global_acc_test = -1.0  # Melhor acurácia do conj. teste (todos ciclos)
+
     # Variáveis para salvar as tabelas gerais do ciclo
     cycle_best_mlp = []        # Dados espec. do melhor MLP
     cycle_acc_test = []        # Taxa de Acerto do Conj. Teste
@@ -587,8 +601,8 @@ def main():
         #! Experimentos com MLP
         #!###########################################################
         # Variáveis para salvar o gráfico de convergência do melhor MLP executado
-        best_mlp = None
-        best_acc_test = -1.0        # Melhor acurácia do conj. teste
+        best_local_mlp = None             # Melhor MLP (por ciclo)
+        best_local_acc_test = -1.0        # Melhor acurácia do conj. teste (por ciclo)
         best_num_experiment = -1    # Número do melhor experimento
 
         # Variáveis para salvar os dados de cada experimento
@@ -628,9 +642,9 @@ def main():
             print(f"Tempo de Execução (s): {total_time :.4f}")
 
             # Salvando o melhor Perceptron para gráfico
-            if acc_test > best_acc_test:
-                best_mlp = cp(mlp)
-                best_acc_test = cp(acc_test)
+            if acc_test > best_local_acc_test:
+                best_local_mlp = cp(mlp)
+                best_local_acc_test = cp(acc_test)
                 best_num_experiment = cp(num_experiment)
 
             # Salvando os dados para as tabelas
@@ -640,36 +654,16 @@ def main():
             experiment_exec_time.append(total_time)
 
             print(f"{'-'*50}")
-
-        # Após os experimentos, criar gráfico de conv. do melhor MLP
-        plot_experiment(
-            filename=filename, 
-            alg_name_acronym='MLP', 
-            num_cycle=cycle+1, 
-            num_experiment=best_num_experiment,
-            learning_rate=initial_learning_rate[cycle],
-            mse_train=np.array(mlp.loss_curve_), 
-            mse_val=None
-        )
         
-        # Também, salvar dados relevantes da melhor rede executada
-        y_train_pred = best_mlp.predict(X=X_train)
-        y_val_pred = best_mlp.predict(X=X_val)
-        y_test_pred = best_mlp.predict(X=X_test)
-        
-        cycle_best_mlp.append([
-            best_mlp.coefs_, # W final do ciclo
-            best_mlp.intercepts_,  # Bias final do ciclo
-            initial_learning_rate[cycle],  # Taxa de Learning Rate
-            confusion_matrix(y_train, y_train_pred), # Matriz de Confusão: Treinamento
-            confusion_matrix(y_val, y_val_pred),     # Matriz de Confusão: Validação
-            confusion_matrix(y_test, y_test_pred),   # Matriz de Confusão: Teste
-        ])
+        # Salvando o melhor MLP local (por ciclo) para gráfico
+        if best_local_acc_test > best_global_acc_test:
+            best_global_mlp = cp(best_local_mlp)
+            best_global_acc_test = cp(best_local_acc_test)
         
         # Salvando outros dados relevantes do ciclo
         cycle_acc_test.append([
-            best_mlp.coefs_,  # W final do ciclo
-            best_mlp.intercepts_,  # Bias final do ciclo
+            best_local_mlp.coefs_,  # W final do ciclo
+            best_local_mlp.intercepts_,  # Bias final do ciclo
             initial_learning_rate[cycle],   # Taxa de Learning Rate
             np.mean(experiment_acc_test),   # Média
             np.std(experiment_acc_test),    # Desvio Padrão
@@ -678,8 +672,8 @@ def main():
             np.max(experiment_acc_test),    # Máximo
         ])
         cycle_error_test.append([
-            best_mlp.coefs_,  # W final do ciclo
-            best_mlp.intercepts_,  # Bias final do ciclo
+            best_local_mlp.coefs_,  # W final do ciclo
+            best_local_mlp.intercepts_,  # Bias final do ciclo
             initial_learning_rate[cycle],     # Taxa de Learning Rate
             np.mean(experiment_error_test),   # Média
             np.std(experiment_error_test),    # Desvio Padrão
@@ -688,8 +682,8 @@ def main():
             np.max(experiment_error_test),    # Máximo
         ])
         cycle_epoch_train.append([
-            best_mlp.coefs_, # W final do ciclo
-            best_mlp.intercepts_, # Bias final do ciclo
+            best_local_mlp.coefs_, # W final do ciclo
+            best_local_mlp.intercepts_, # Bias final do ciclo
             initial_learning_rate[cycle],      # Taxa de Learning Rate
             np.mean(experiment_epoch_train),   # Média
             np.std(experiment_epoch_train),    # Desvio Padrão
@@ -698,8 +692,8 @@ def main():
             np.max(experiment_epoch_train),    # Máximo
         ])
         cycle_exec_time.append([
-            best_mlp.coefs_,  # W final do ciclo
-            best_mlp.intercepts_,  # Bias final do ciclo
+            best_local_mlp.coefs_,  # W final do ciclo
+            best_local_mlp.intercepts_,  # Bias final do ciclo
             initial_learning_rate[cycle],    # Taxa de Learning Rate
             np.mean(experiment_exec_time),   # Média
             np.std(experiment_exec_time),    # Desvio Padrão
@@ -713,7 +707,32 @@ def main():
         print(f"{'-'*75}\n")
 
     # Salvar os dados para as tabelas
-
+    
+    # Após os experimentos, criar gráfico de conv. do melhor MLP
+    plot_experiment(
+        filename=filename, 
+        alg_name_acronym='MLP', 
+        num_cycle=cycle+1, 
+        num_experiment=best_num_experiment,
+        learning_rate=initial_learning_rate[cycle],
+        mse_train=np.array(best_global_mlp.loss_curve_),
+        mse_val=None
+    )
+    
+    # Também, salvar dados relevantes da melhor rede executada
+    y_train_pred = best_global_mlp.predict(X=X_train)
+    y_val_pred = best_global_mlp.predict(X=X_val)
+    y_test_pred = best_global_mlp.predict(X=X_test)
+    
+    cycle_best_mlp.append([
+        best_global_mlp.coefs_, # W final do ciclo
+        best_global_mlp.intercepts_,  # Bias final do ciclo
+        initial_learning_rate[cycle],  # Taxa de Learning Rate
+        confusion_matrix(y_train, y_train_pred), # Matriz de Confusão: Treinamento
+        confusion_matrix(y_val, y_val_pred),     # Matriz de Confusão: Validação
+        confusion_matrix(y_test, y_test_pred),   # Matriz de Confusão: Teste
+    ])
+    
     # Melhor Perceptron
     create_txt(
         filename=filename,

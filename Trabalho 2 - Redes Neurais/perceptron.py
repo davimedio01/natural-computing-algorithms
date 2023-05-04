@@ -9,7 +9,7 @@ RA: CCO230111
 import numpy as np                               # Matrizes e Funções Matemáticas
 from copy import copy as cp                      # Copiar objetos (não somente a referência)
 from sklearn.metrics import accuracy_score       # Cálculo da Acurácia
-#from scipy.special import softmax                # Função de Ativação: Limiar com Softmax
+
 
 #####################################################
 #             Rede Neural: Perceptron               #
