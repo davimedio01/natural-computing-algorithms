@@ -473,12 +473,11 @@ def create_csv_cycle(
     table_name = f'{alg_name_acronym}_{type_exp}.csv'
 
     # Definindo o título da tabela com base no tipo de experimento
-    table_title = 'Taxa de Learning Rate,Média,Desvio Padrão,Mínimo,Mediana,Máximo'
+    table_title = 'Taxa de Aprendizado,Média,Desvio Padrão,Mínimo,Mediana,Máximo'
 
     # Escrevendo o arquivo com o título
     np.savetxt(fname=os.path.join(sub_directory, table_name), X=rows, fmt='%.4f', header=table_title,
                delimiter=',', comments='', encoding='UTF-8')
-
 
 
 def main():
