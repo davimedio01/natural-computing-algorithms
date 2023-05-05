@@ -226,10 +226,6 @@ def run_perceptron_cycle_experiments(
         
         # Salvando outros dados relevantes do ciclo
         cycle_acc_test.append([
-            initial_W,     # W inicial do ciclo
-            initial_bias,  # Bias inicial do ciclo
-            best_local_perceptron.W,  # W final do ciclo
-            best_local_perceptron.bias,  # Bias final do ciclo
             initial_learning_rate[cycle],   # Taxa de Learning Rate
             np.mean(experiment_acc_test),   # Média
             np.std(experiment_acc_test),    # Desvio Padrão
@@ -238,10 +234,6 @@ def run_perceptron_cycle_experiments(
             np.max(experiment_acc_test),    # Máximo
         ])
         cycle_error_test.append([ #! Não usado no relatório
-            initial_W,     # W inicial do ciclo
-            initial_bias,  # Bias inicial do ciclo
-            best_local_perceptron.W, # W final do ciclo
-            best_local_perceptron.bias, # Bias final do ciclo
             initial_learning_rate[cycle],     # Taxa de Learning Rate
             np.mean(experiment_error_test),   # Média
             np.std(experiment_error_test),    # Desvio Padrão
@@ -250,10 +242,6 @@ def run_perceptron_cycle_experiments(
             np.max(experiment_error_test),    # Máximo
         ])
         cycle_epoch_train.append([
-            initial_W,     # W inicial do ciclo
-            initial_bias,  # Bias inicial do ciclo
-            best_local_perceptron.W,  # W final do ciclo
-            best_local_perceptron.bias,  # Bias final do ciclo
             initial_learning_rate[cycle],      # Taxa de Learning Rate
             np.mean(experiment_epoch_train),   # Média
             np.std(experiment_epoch_train),    # Desvio Padrão
@@ -262,10 +250,6 @@ def run_perceptron_cycle_experiments(
             np.max(experiment_epoch_train),    # Máximo
         ])
         cycle_exec_time.append([
-            initial_W,     # W inicial do ciclo
-            initial_bias,  # Bias inicial do ciclo
-            best_local_perceptron.W,  # W final do ciclo
-            best_local_perceptron.bias,  # Bias final do ciclo
             initial_learning_rate[cycle],    # Taxa de Learning Rate
             np.mean(experiment_exec_time),   # Média
             np.std(experiment_exec_time),    # Desvio Padrão
@@ -308,7 +292,7 @@ def run_perceptron_cycle_experiments(
     ])
     
     # Melhor Perceptron
-    create_txt(
+    create_txt_best(
         filename=filename,
         alg_name_acronym='P',
         type_exp='melhorP',
@@ -316,7 +300,7 @@ def run_perceptron_cycle_experiments(
     )
     
     # Taxa de Acerto
-    create_txt(
+    create_csv_cycle(
         filename=filename,
         alg_name_acronym='P',
         type_exp='acerto',
@@ -324,7 +308,7 @@ def run_perceptron_cycle_experiments(
     )
     
     # Taxa de Erro
-    create_txt(
+    create_csv_cycle(
         filename=filename,
         alg_name_acronym='P',
         type_exp='erro',
@@ -332,7 +316,7 @@ def run_perceptron_cycle_experiments(
     )
     
     # Número de Épocas
-    create_txt(
+    create_csv_cycle(
         filename=filename,
         alg_name_acronym='P',
         type_exp='epocas',
@@ -340,7 +324,7 @@ def run_perceptron_cycle_experiments(
     )
     
     # Tempo de Execução (s)
-    create_txt(
+    create_csv_cycle(
         filename=filename,
         alg_name_acronym='P',
         type_exp='tempo',
@@ -415,8 +399,8 @@ def plot_experiment(
     plt.close()
 
 
-# Criar arquivos texto para listas
-def create_txt(
+# Criar arquivos texto para dados do melhor experimento
+def create_txt_best(
     filename: str,
     alg_name_acronym: str,
     type_exp: str,
@@ -453,6 +437,48 @@ def create_txt(
         for item in rows:
             # Escreve cada item da lista (um ciclo) em uma "linha"
             file.write("%s\n" % item)
+
+
+# Manipular arquivos CSV
+def create_csv_cycle(
+    filename: str,
+    alg_name_acronym: str,
+    type_exp: str,
+    rows: list
+):
+    """Escreve os experimentos em um arquivo CSV para futuras tabelas do relatório.
+
+    Args:
+        filename : str 
+            Nome do arquivo/exercicio (ex: 'ex01')
+        alg_name_acronym : str
+            Nome ou sigla do algoritmo executado (ex: 'Percp' - Perceptron)
+        type_exp (str): tipo da tabela (ex: 'acerto')
+            -> Utilize: 'melhorP'/'melhorMLP', 'acerto', 'erro', 'epoca', 'tempo'
+        rows : list [[dados, ...], ...] 
+            Lista com os dados das linhas no total (ex: [['10', '0.1'], ['20', '0.2'])
+        
+    Notes:
+        Cria um arquivo csv da tabela com o seguinte nome: {alg_name_acronym}_{type_exp}.csv 
+        Salva em um subdiretório da pasta local do código com o nome: {filename}
+    """
+
+    # Defininido o sub-diretório dos dados
+    import os
+    actual_dir = os.path.dirname(__file__)
+    sub_directory = os.path.join(actual_dir, f'{filename}/')
+    os.makedirs(sub_directory, exist_ok=True)
+
+    # Definindo o nome do arquivo
+    table_name = f'{alg_name_acronym}_{type_exp}.csv'
+
+    # Definindo o título da tabela com base no tipo de experimento
+    table_title = 'Taxa de Learning Rate,Média,Desvio Padrão,Mínimo,Mediana,Máximo'
+
+    # Escrevendo o arquivo com o título
+    np.savetxt(fname=os.path.join(sub_directory, table_name), X=rows, fmt='%.4f', header=table_title,
+               delimiter=',', comments='', encoding='UTF-8')
+
 
 
 def main():
@@ -534,7 +560,6 @@ def main():
         max_patience=max_patience,
     )
 
-
     ########################################
     #!            Exercício 03            !#
     ########################################
@@ -542,6 +567,9 @@ def main():
     # Definindo as condições iniciais do exercício
     filename = 'ex03'
     X, y = load_btsc_dataset()
+    
+    # Refatorando as classes do dataset para 0 e 1, como no original (!= OpenML)
+    y = np.where(y == '1', 0, 1)
     
     ##################################
     #*          Perceptron          *#
@@ -666,43 +694,35 @@ def main():
         
         # Salvando outros dados relevantes do ciclo
         cycle_acc_test.append([
-            best_local_mlp.coefs_,  # W final do ciclo
-            best_local_mlp.intercepts_,  # Bias final do ciclo
             initial_learning_rate[cycle],   # Taxa de Learning Rate
             np.mean(experiment_acc_test),   # Média
             np.std(experiment_acc_test),    # Desvio Padrão
             np.min(experiment_acc_test),    # Mínimo
-            np.median(experiment_acc_test),  # Mediana
+            np.median(experiment_acc_test), # Mediana
             np.max(experiment_acc_test),    # Máximo
         ])
         cycle_error_test.append([  # ! Não usado no relatório
-            best_local_mlp.coefs_,  # W final do ciclo
-            best_local_mlp.intercepts_,  # Bias final do ciclo
             initial_learning_rate[cycle],     # Taxa de Learning Rate
             np.mean(experiment_error_test),   # Média
             np.std(experiment_error_test),    # Desvio Padrão
             np.min(experiment_error_test),    # Mínimo
-            np.median(experiment_error_test),  # Mediana
+            np.median(experiment_error_test), # Mediana
             np.max(experiment_error_test),    # Máximo
         ])
         cycle_epoch_train.append([
-            best_local_mlp.coefs_, # W final do ciclo
-            best_local_mlp.intercepts_, # Bias final do ciclo
             initial_learning_rate[cycle],      # Taxa de Learning Rate
             np.mean(experiment_epoch_train),   # Média
             np.std(experiment_epoch_train),    # Desvio Padrão
             np.min(experiment_epoch_train),    # Mínimo
-            np.median(experiment_epoch_train),  # Mediana
+            np.median(experiment_epoch_train), # Mediana
             np.max(experiment_epoch_train),    # Máximo
         ])
         cycle_exec_time.append([
-            best_local_mlp.coefs_,  # W final do ciclo
-            best_local_mlp.intercepts_,  # Bias final do ciclo
             initial_learning_rate[cycle],    # Taxa de Learning Rate
             np.mean(experiment_exec_time),   # Média
             np.std(experiment_exec_time),    # Desvio Padrão
             np.min(experiment_exec_time),    # Mínimo
-            np.median(experiment_exec_time),  # Mediana
+            np.median(experiment_exec_time), # Mediana
             np.max(experiment_exec_time),    # Máximo
         ])
 
@@ -738,7 +758,7 @@ def main():
     ])
     
     # Melhor Perceptron
-    create_txt(
+    create_txt_best(
         filename=filename,
         alg_name_acronym='MLP',
         type_exp='melhorMLP',
@@ -746,7 +766,7 @@ def main():
     )
 
     # Taxa de Acerto
-    create_txt(
+    create_csv_cycle(
         filename=filename,
         alg_name_acronym='MLP',
         type_exp='acerto',
@@ -754,7 +774,7 @@ def main():
     )
 
     # Taxa de Erro
-    create_txt(
+    create_csv_cycle(
         filename=filename,
         alg_name_acronym='MLP',
         type_exp='erro',
@@ -762,7 +782,7 @@ def main():
     )
 
     # Número de Épocas
-    create_txt(
+    create_csv_cycle(
         filename=filename,
         alg_name_acronym='MLP',
         type_exp='epocas',
@@ -770,13 +790,12 @@ def main():
     )
 
     # Tempo de Execução (s)
-    create_txt(
+    create_csv_cycle(
         filename=filename,
         alg_name_acronym='MLP',
         type_exp='tempo',
         rows=cycle_exec_time,
     )
-    
     
 
 if __name__ == '__main__':
