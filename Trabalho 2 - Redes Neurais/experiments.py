@@ -139,6 +139,7 @@ def run_perceptron_cycle_experiments(
     # Variáveis para salvar o gráfico de convergência do melhor Perceptron local executado
     best_global_perceptron = None # Relativo a todos os ciclos
     best_global_acc_test = -1.0   # Melhor acurácia do conj. teste (todos os ciclos)
+    best_cycle = 0     # Melhor ciclo de execução
     
     # Variáveis para salvar as tabelas gerais do ciclo
     cycle_best_perceptron = [] # Dados espec. do melhor Perceptron
@@ -223,6 +224,7 @@ def run_perceptron_cycle_experiments(
         if best_local_acc_test > best_global_acc_test:
             best_global_perceptron = cp(best_local_perceptron)
             best_global_acc_test = cp(best_local_acc_test)
+            best_cycle = cp(cycle)
         
         # Salvando outros dados relevantes do ciclo
         cycle_acc_test.append([
@@ -268,7 +270,7 @@ def run_perceptron_cycle_experiments(
     plot_experiment(
         filename=filename, 
         alg_name_acronym='P', 
-        num_cycle=cycle+1, 
+        num_cycle=best_cycle+1,
         num_experiment=best_num_experiment,
         learning_rate=best_global_perceptron.learning_rate,
         mse_train=best_global_perceptron.mse_train, 
@@ -612,6 +614,7 @@ def main():
     # Variáveis para salvar o gráfico de convergência do melhor MLP executado
     best_global_mlp = None       # Melhor MLP (todos os ciclos)
     best_global_acc_test = -1.0  # Melhor acurácia do conj. teste (todos ciclos)
+    best_cycle = 0               # Melhor ciclo de execução
 
     # Variáveis para salvar as tabelas gerais do ciclo
     cycle_best_mlp = []        # Dados espec. do melhor MLP
@@ -690,6 +693,7 @@ def main():
         if best_local_acc_test > best_global_acc_test:
             best_global_mlp = cp(best_local_mlp)
             best_global_acc_test = cp(best_local_acc_test)
+            best_cycle = cp(cycle)
         
         # Salvando outros dados relevantes do ciclo
         cycle_acc_test.append([
@@ -735,7 +739,7 @@ def main():
     plot_experiment(
         filename=filename, 
         alg_name_acronym='MLP', 
-        num_cycle=cycle+1, 
+        num_cycle=best_cycle+1,
         num_experiment=best_num_experiment,
         learning_rate=initial_learning_rate[cycle],
         mse_train=np.array(best_global_mlp.loss_curve_),
