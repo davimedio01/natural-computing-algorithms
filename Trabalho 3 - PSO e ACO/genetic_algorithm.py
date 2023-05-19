@@ -8,13 +8,14 @@ RA: CCO230111
 
 import numpy as np               # Matrizes e Funções Matemáticas
 from copy import copy as cp      # Copiar objetos (não somente a referência)
+from time import time       # Biblioteca para capturar o tempo de execução
 
 
 #####################################################
 #              Algoritmo Genético (GA)              #
 #####################################################
 class GA:
-    """Algoritmo Genético para minimzação ou maximização de
+    """Algoritmo Genético para minimização ou maximização de
     funções contínuas de uma ou mais variáveis. 
     Utilização de bitstrings e seleção por torneio (maximizar)
     ou roleta (minimizar).
@@ -22,27 +23,29 @@ class GA:
     
     Attributes:
         bounds : np.ndarray [[float, ...], ...]
-            Lista contendo os intervalos das variáveis da função contínua
+            Lista contendo os intervalos das variáveis da função contínua \n
         bitstring_size : np.ndarray [int, int]
-            Lista do tipo [int, int] contendo a quantidade máx. de dígitos para parte inteira [0] e decimal [1] das bitstrings
-            Não está incluído o bit de sinal, o qual é acrescido separadamente
+            Lista do tipo [int, int] contendo a quantidade máx. de dígitos para parte inteira [0] e decimal [1] das bitstrings \n
+            Não está incluído o bit de sinal, o qual é acrescido separadamente \n
         population_size : int
-            Tamanho desejado da população inicial
+            Tamanho desejado da população inicial \n
         current_population : np.ndarray [[float, ...], ...]
-            Lista contendo a população atual. Utilizada para geração da população inicial
+            Lista contendo a população atual. Utilizada para geração da população inicial \n
         best_global_population : np.ndarray [[float, ...], ...]
-            Lista contendo a melhor população global encontrada nas gerações
+            Lista contendo a melhor população global encontrada nas gerações \n
         best_global_fitness : np.ndarray [float, ...]
-            Lista contendo os valores de aptidão da melhor população global encontrada nas gerações
+            Lista contendo os valores de aptidão da melhor população global encontrada nas gerações \n
         best_local_population : np.ndarray [[float, ...], ...]
-            Lista contendo a melhor população local encontrada nas gerações
+            Lista contendo a melhor população local encontrada nas gerações \n
         best_local_fitness : np.ndarray [float, ...]
-            Lista contendo os valores de aptidão das melhores populações locais encontradas nas gerações
+            Lista contendo os valores de aptidão das melhores populações locais encontradas nas gerações \n
         all_mean_fitness : np.ndarray [float, ...]
-            Lista contendo a média das aptidões locais durante as gerações
+            Lista contendo a média das aptidões locais durante as gerações \n
         best_generation : int      
-            Número de gerações percorridas até o encontro da melhor população
-             
+            Número de gerações percorridas até o encontro da melhor população \n
+        exec_time : float
+            Tempo de execução do algoritmo, em segundos. \n
+         
     Methods:
         generate_population (bounds: np.ndarray, population_size: int, bitstring_size: np.ndarray)
             Realiza a geração inicial de população, com base nos parâmetros de inicialização.
@@ -51,7 +54,7 @@ class GA:
                 population_size: tamanho desejado da população inicial (padrão: 10)
                 bitstring_size: lista do tipo [int, int] contendo a quantidade máx. de dígitos para parte inteira [0] e decimal [1] das bitstrings (padrão: [11, 20])
         
-        genetic_algorithm(fitness_func: callable, is_min: bool, max_gen: int, max_patience: int, size_tournament: int, elitism: bool, elite_size: int, crossover_rate: float, mutation_rate: float)
+        optimize (fitness_func: callable, is_min: bool, max_gen: int, max_patience: int, size_tournament: int, elitism: bool, elite_size: int, crossover_rate: float, mutation_rate: float)
             Aplicação do Algoritmo Genético, a partir dos parâmetros e da população inicial gerada na 'generate_population' 
                 fitness_func: função de avaliação de aptidão. Ver exemplo de uso na '__rosenbrock_func__' (padrão: __rosenbrock_func__)
                 is_min: booleana para atribuir algoritmo para min/max (padrão: True)
@@ -78,6 +81,7 @@ class GA:
         self.best_local_fitness = None
         self.all_mean_fitness = None
         self.best_generation = 0
+        self.exec_time = time() # Tempo inicial de execução
         
     
     #####################################################
@@ -99,12 +103,13 @@ class GA:
 
         Args:       
             values : np.ndarray[float, ...]
-                Variáveis em número em float
+                Variáveis em número em float \n
             bitstring_size : np.ndarray[int, int]
-                Lista a quantidade máx. de dígitos para parte inteira [0] e decimal [1] (padrão: [11, 20] = 31 bits + 1 bit sinal)
+                Lista a quantidade máx. de dígitos para parte inteira [0] e decimal [1] (padrão: [11, 20] = 31 bits + 1 bit sinal) \n
             
         Returns:
-            binary_converted (list[bitstring, ...]): lista com número convertido em binário
+            binary_converted : list[bitstring, ...]
+                Lista com número convertido em binário \n
         """
 
         # Inicia a lista de saída
@@ -157,14 +162,15 @@ class GA:
 
         Args:       
             values : np.ndarray[bitstring, ...]
-                Lista com as variáveis em representação binária 
+                Lista com as variáveis em representação binária \n
             bounds : np.ndarray[[float, float], ...]
-                Lista contendo os intervalos das variáveis da função (padrão: [[-1.0, 1.0], [-1.0, 1.0]])
+                Lista contendo os intervalos min/max das variáveis da função (padrão: [[-1.0, 1.0], [-1.0, 1.0]]) \n
             bitstring_size : np.ndarray[int, int]
-                Lista a quantidade máx. de dígitos para parte inteira [0] e decimal [1] (padrão: [11, 20] = 31 bits + 1 bit sinal)
+                Lista a quantidade máx. de dígitos para parte inteira [0] e decimal [1] (padrão: [11, 20] = 31 bits + 1 bit sinal) \n
             
         Returns:
-            float_converted (list[float, ...]): lista de variáveis convertidas em float
+            float_converted : list[float, ...]
+                Lista de variáveis convertidas em float \n
         """
 
         # Obtém o maior valor possível do binário, pela quantidade inteira (exclui bit de sinal)
@@ -217,11 +223,11 @@ class GA:
 
         Args: 
             bounds : np.ndarray[[float, float], ...]
-                Lista com valores do intervalo da função (padrão: [[-1.0, 1.0], [-1.0, 1.0]])
+                Lista com valores do intervalo da função (padrão: [[-1.0, 1.0], [-1.0, 1.0]]) \n
             population_size : int
-                Tamanho da população (padrão: 10)
+                Tamanho da população (padrão: 10) \n
             bitstring_size : np.ndarray[int, int]
-                Lista a quantidade máx. de dígitos para parte inteira [0] e decimal [1] (padrão: [11, 20] = 31 bits + 1 bit sinal)
+                Lista a quantidade máx. de dígitos para parte inteira [0] e decimal [1] (padrão: [11, 20] = 31 bits + 1 bit sinal) \n
         """
         
         # Salvando valores de tamanho de população
@@ -252,15 +258,15 @@ class GA:
 
         Args:
             cur_population : np.ndarray[[bitstring, ...], ...]
-                Vetor contendo a população atual para seleção
+                Vetor contendo a população atual para seleção \n
             fitness : np.ndarray[float, ...]
-                Vetor contendo todos os valores de aptidão da população
+                Vetor contendo todos os valores de aptidão da população \n
             
         Returns:
             new_population : np.ndarray[[bitstring, ...], ...]
-                Vetor contendo a nova população selecionada
+                Vetor contendo a nova população selecionada \n
             selected_fitness : np.ndarray[float, ...]
-                Vetor contendo todos os valores de aptidão da população selecionada
+                Vetor contendo todos os valores de aptidão da população selecionada \n
         """
 
         # Determinar a porção da roleta para cada indivíduo no intervalo [start; end]
@@ -284,17 +290,17 @@ class GA:
 
         Args:
             cur_population : np.ndarray[[bitstring, ...], ...]
-                Vetor contendo a população atual para seleção
+                Vetor contendo a população atual para seleção \n
             fitness : np.ndarray[float, ...]
-                Vetor contendo todos os valores de aptidão da população
+                Vetor contendo todos os valores de aptidão da população \n
             size : int
-                Número de indivíduos selecionados aleatóriamente (padrão: 3)
+                Número de indivíduos selecionados aleatóriamente (padrão: 3) \n
             
         Returns:
             new_population : np.ndarray[[bitstring, ...], ...]
-                Vetor contendo a nova população selecionada
+                Vetor contendo a nova população selecionada \n
             selected_fitness : np.ndarray[float, ...]
-                Vetor contendo todos os valores de aptidão da população selecionada
+                Vetor contendo todos os valores de aptidão da população selecionada \n
         """
 
         # Criação do vetor para nova população, com base no tamanho da população atual
@@ -332,17 +338,17 @@ class GA:
 
         Args:
             parent1 : np.ndarray[bitstring, ...]
-                Vetor representando o primeiro indivíduo
+                Vetor representando o primeiro indivíduo \n
             parent2 : np.ndarray[bitstring, ...]
-                Vetor representando o segundo indivíduo
+                Vetor representando o segundo indivíduo \n
             crossover_rate : float
-                Float que representa a taxa acontecimento de crossover (padrão: 0.8)
+                Float que representa a taxa acontecimento de crossover (padrão: 0.8) \n
             
         Returns:
             child1 : np.ndarray[bitstring, ...]
-                Vetor representando o primeiro filho
+                Vetor representando o primeiro filho \n
             child2 : np.ndarray[bitstring, ...]
-                Vetor representando o segundo filho
+                Vetor representando o segundo filho \n
         """
 
         # Cria os vetores iniciais para abrigar os filhos
@@ -380,13 +386,13 @@ class GA:
 
         Args:
             individual : np.ndarray[bitstring, ...]
-                Vetor representando o indivíduo a sofrer mutação
+                Vetor representando o indivíduo a sofrer mutação \n
             mutation_rate : float
-                Float que representa a taxa de mutação (padrão: 0.2)
+                Float que representa a taxa de mutação (padrão: 0.2) \n
             
         Returns:
             mutant : np.ndarray[bitstring, ...]
-                Vetor representando o indivíduo com mutação
+                Vetor representando o indivíduo com mutação \n
         """
 
         # Cria o vetor inicial para abrigar o mutante
@@ -419,21 +425,21 @@ class GA:
 
         Args:
             selected_population : np.ndarray[[bitstring, ...], ...]
-                Vetor com a população selecionada
+                Vetor com a população selecionada \n
             selected_fitness : np.ndarray[float, ...]
-                Vetor contendo todos os valores de aptidão da população
+                Vetor contendo todos os valores de aptidão da população \n
             elitism : bool
-                Considerar ou não o elitismo (padrão: False)
+                Considerar ou não o elitismo (padrão: False) \n
             elite_size : int (opcional se 'elitism=False')
-                Quantidade de indivíduos para elitismo (padrão: 3)
+                Quantidade de indivíduos para elitismo (padrão: 3) \n
             crossover_rate : float
-                Taxa de crossover (padrão: 0.8)
+                Taxa de crossover (padrão: 0.8) \n
             mutation_rate : float
-                Taxa de mutação (padrão: 0.2)
+                Taxa de mutação (padrão: 0.2) \n
             
         Returns:
             new_population : np.ndarray[[bitstring, ...], ...]
-                Vetor com a nova população
+                Vetor com a nova população \n
         """
 
         # Seleção de todos os pais para reprodução
@@ -486,7 +492,7 @@ class GA:
     #         3 - Função Principal         #
     ########################################
 
-    def genetic_algorithm(
+    def optimize(
         self,
         fitness_func: callable = None,
         is_min = True,
@@ -502,32 +508,32 @@ class GA:
         de uma população de bitstring, para min/max de uma 
         função multivariável.
 
-        Seleção por Torneio para Minimização.
+        Seleção por Torneio para Minimização. \n
             -> 'size_tournament': define o tamanho do torneio
 
         Seleção por Roleta para Maximização.
 
         Args:
             fitness_func : callable
-                Função de avaliação de aptidão (ver exemplo de uso na '__rosenbrock_func__ (x: list[float])')
+                Função de avaliação de aptidão (ver exemplo de uso na '__rosenbrock_func__ (x: list[float])') \n
             is_min : bool
                 Booleana para atribuir algoritmo para min/max (padrão: True)
-                    - Se 'True', irá verificar minimização\n
-                    - Se 'False', irá verificar maximização
+                    -- Se 'True', irá verificar minimização \n
+                    -- Se 'False', irá verificar maximização \n
             max_gen : int
-                Número máximo de gerações possíveis (padrão: 10000)
+                Número máximo de gerações possíveis (padrão: 10000) \n
             max_patience : int
-                Número máximo de iterações em que não houve melhora (padrão: 100)
+                Número máximo de iterações em que não houve melhora (padrão: 100) \n
             size_tournament : int (opcional se 'is_min=False')
-                Número de indivíduos selecionados aleatóriamente para o torneio (padrão: 3)
+                Número de indivíduos selecionados aleatóriamente para o torneio (padrão: 3) \n
             elitism : bool
-                Considerar ou não o elitismo (padrão: False)
-            elite_size : int (opcional se 'elitism=False')
-                Quantidade de indivíduos para elitismo (padrão: 3)
+                Considerar ou não o elitismo (padrão: False) \n
+            elite_size : int (opcional se 'elitism=False') 
+                Quantidade de indivíduos para elitismo (padrão: 3) \n
             crossover_rate : float
-                Taxa de crossover (padrão: 0.8)
+                Taxa de crossover (padrão: 0.8) \n
             mutation_rate : float
-                Taxa de mutação (padrão: 0.2)
+                Taxa de mutação (padrão: 0.2) \n
         """
         print(f"{'-'*50}")
         print(f"{'Algoritmo Genético':^50}")
@@ -680,10 +686,13 @@ class GA:
             # Salvando as médias das aptidões
             self.all_mean_fitness = np.append(self.all_mean_fitness, np.array([np.mean(current_fitness)]), axis=0)
         
+        # Atualizando o tempo de execução
+        self.exec_time = time() - self.exec_time
         
         print(f"Geração {self.best_generation}")
         print(f"Melhor Aptidão: {self.best_global_fitness[-1]}")
         print(f"Melhor Indivíduo: {self.best_global_population[-1]}")
+        print(f"Tempo de Execução (s): {self.exec_time:.4f}")
 
         print(f"{'-'*50}")
         print(f"{'Fim do Algoritmo Genético':^50}")
