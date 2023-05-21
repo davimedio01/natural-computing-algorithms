@@ -54,8 +54,8 @@ def ex02_tsp(tsp_filename: str):
             Variável representativa do problema TSP carregado. Utilização da biblioteca 'tsplib95'².\n
             O acesso as informações dos dados pode ser feita pelo método 'render()'.\n
             O conjunto de nós e suas coordenadas podem ser acessadas por 'get_nodes()' e retorna um 'dict'.\n
-        dist_coords : np.ndarray[[float, float], ...]
-            Matriz de adjacência contendo as distância entre cada cidade do problema (ex: [[0.0, 2.0], [2.0, 0.0]])\n
+        node_coords : np.ndarray[[float, float], ...]
+            Conjunto de coordenadas do problema (ex: [[1.0, 2.0], [2.0, 4.0]])\n
     
     Notes:
         ¹: Base de Dados TSPLIB disponível em http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/ \n
@@ -65,17 +65,14 @@ def ex02_tsp(tsp_filename: str):
     # Importando o arquivo TSP com os dados do problema
     tsp_problem = tsplib95.load(tsp_filename + '.tsp')
     
-    # Recuperando a quantidade de cidades
-    num_cities = tsp_problem.dimension
-        
-    # Criando a matriz de adjacência com a distância entre as cidades
-    dist_coords = np.zeros((num_cities, num_cities), dtype=np.float32)
-    for i in range(num_cities):
-        for j in range(num_cities):
-            # Recuperando os valores das coordenadas, com início na "cidade 1"
-            dist_coords[i, j] = tsp_problem.get_weight(i + 1, j + 1)
+    # Recuperando os nós (pares de coordenadas) do TSP
+    nodes = tsp_problem.node_coords.values()
+    node_coords = np.array([coords for coords in nodes])
     
-    return tsp_problem, dist_coords
+    # # Recuperando a quantidade de cidades
+    # num_cities = tsp_problem.dimension
+    
+    return tsp_problem, node_coords
 
 
 ########################################
@@ -159,7 +156,6 @@ def plot_pso_experiment(
 def plot_aco_experiment(
     filename: str,
     tsp_filename: str,
-    type_exp: str,
     num_cycle: int,
     num_experiment: int,
     best_dist: np.ndarray = None,
@@ -175,27 +171,22 @@ def plot_aco_experiment(
             Nome do arquivo/exercicio (ex: 'ex01') \n
         tsp_filename : str
             Nome do arquivo do TSP, sem extensão (ex: 'berlin52') \n
-        type_exp : str
-            Tipo de gráfico a ser plotado, com base no exercício (ex: 'itr' ou 'city') \n
         num_cycle : int 
             Número do ciclo de execução \n
         num_experiment : int 
             Número do experimento dentro do ciclo \n
+        best_itr : int
+            Valores da melhor iteração do ACO. \n
         best_dist : np.ndarray 
-            Valores das melhores distâncias por iteração do ACO. 
-            Plotado somente quando type_exp='itr'. \n
+            Valores das melhores distâncias por iteração do ACO. \n
         cities_x_coords : np.ndarray 
-            Valores X das coordenadas das cidades do TSP. 
-            Plotado somente quando type_exp='city'. \n
+            Valores X das coordenadas das cidades do TSP. \n
         cities_y_coords : np.ndarray 
-            Valores Y das coordenadas das cidades do TSP. 
-            Plotado somente quando type_exp='city'. \n
+            Valores Y das coordenadas das cidades do TSP. \n
         best_path_x_coords : np.ndarray 
-            Valores X das coordenadas do melhor caminho do ACO. 
-            Plotado somente quando type_exp='city'. \n
+            Valores X das coordenadas do melhor caminho do ACO. \n
         best_path_y_coords : np.ndarray 
-            Valores Y das coordenadas do melhor caminho do ACO. 
-            Plotado somente quando type_exp='city'. \n
+            Valores Y das coordenadas do melhor caminho do ACO. \n
         
     Notes:
         Cria um arquivo de imagem do gráfico com o seguinte nome: {tsp_filename}_{type_exp}_ciclo{num_cycle}_exp{num_experiment}.png \n
@@ -210,51 +201,70 @@ def plot_aco_experiment(
     actual_dir = os.path.dirname(__file__)
     sub_directory = os.path.join(actual_dir, f'{filename}/')
     os.makedirs(sub_directory, exist_ok=True)
-
-    # Definindo o nome do arquivo
-    plot_name = f'{tsp_filename}_{type_exp}_ciclo{num_cycle}_exp{num_experiment}.png'
-
-    # Definindo o título do gráfico
-    title = 'ACO-TSP: ' + tsp_filename
-
+    
+    #######################################
+    #! Gráfico de Distâncias por Iteração #
+    #######################################
+    
     # Configurando o tamanho do gráfico para comportar as cidades, se necessário
-    plt.figure(figsize=(8, 6))        
-
-    # Plotando o gráfico de acordo com o desejado
-    if type_exp == 'itr':
-        #! Gráfico de Distâncias por Iteração
-        
-        # Definindo o título do gráfico
-        title += ' - Distância do Menor Caminho x Iteração do ACO' 
-        
-        # Definindo os nomes das coordenadas
-        plt.xlabel('Iteração', loc='center')
-        plt.ylabel('Valor da Distância do Menor Caminho', loc='center')
-        
-        # Plotando as distâncias obtidas, por iteração
-        plt.plot(best_dist, c='b')
-
-    elif type_exp == 'city':
-        #! Gráfico de Coordenadas das Cidades com a Distância Mínima 
-        
-        # Definindo o título do gráfico
-        title += ' - Menor Caminho Encontrado' 
-        
-        # Plotando as cidades, de acordo com as coordenadas
-        plt.scatter(cities_x_coords, cities_y_coords, c='b') # Coordenadas das cidades em pontos
-        
-        # Plotando o caminho mínimo, de acordo com o resultado
-        plt.plot(best_path_x_coords, best_path_y_coords, label='Melhor Caminho', c='r')
-        
-        # Adiciona legenda
-        plt.legend()
-
+    #plt.figure(figsize=(8, 6))        
+    
+    # Definindo o nome do arquivo
+    plot_name = f'{tsp_filename}_itr_ciclo{num_cycle}_exp{num_experiment}.png'
+    
+    # Plotando as distâncias obtidas, por iteração
+    plt.plot(best_dist, c='b')
+    
     # Definindo o título do gráfico
+    suptitle = 'ACO-TSP'
+    title = f'Distância Mínima: {best_dist[-1]:.4f} - Iteração {np.argmin(best_dist)}'
+    
+    # Definindo os nomes do gráfico
+    plt.suptitle(suptitle)
     plt.title(title, loc='center')
+    plt.xlabel('Iteração', loc='center')
+    plt.ylabel('Distância do Menor Caminho', loc='center')
 
     # Plota e salva o gráfico em um arquivo
-    plt.savefig(os.path.join(sub_directory, plot_name))
-    # plt.show()
+    #plt.savefig(os.path.join(sub_directory, plot_name))
+    plt.show()
+
+    # Encerra as configurações do gráfico
+    plt.close()
+    
+    
+    ##############################################################
+    #! Gráfico de Coordenadas das Cidades com a Distância Mínima #
+    ##############################################################
+    
+    # Configurando o tamanho do gráfico para comportar as cidades, se necessário
+    #plt.figure(figsize=(8, 6))
+    
+    # Definindo o nome do arquivo
+    plot_name = f'{tsp_filename}_path-city_ciclo{num_cycle}_exp{num_experiment}.png'
+    
+    # Plotando as cidades, de acordo com as coordenadas
+    plt.scatter(cities_x_coords, cities_y_coords, c='b', s=15, marker='o') # Coordenadas das cidades em pontos
+    
+    # Plotando o caminho mínimo, de acordo com o resultado
+    plt.plot(best_path_x_coords, best_path_y_coords, c='r', linewidth=0.8, linestyle="--")
+    plt.plot([best_path_x_coords[-1], best_path_x_coords[0]], [best_path_y_coords[-1], best_path_y_coords[0]], c='r', linewidth=0.8, linestyle="--")
+    
+    # Definindo o título do gráfico
+    suptitle = f'ACO-TSP: Caminho Mínimo para {tsp_filename}'
+    title = f'Distância Mínima: {best_dist[-1]:.4f} - Iteração {np.argmin(best_dist)}'
+
+    # Definindo os nomes do gráfico
+    plt.xlabel('Latitude', loc='center')
+    plt.ylabel('Longitude', loc='center')
+
+    # Definindo o título do gráfico
+    plt.suptitle(suptitle)
+    plt.title(title, loc='center')
+    
+    # Plota e salva o gráfico em um arquivo
+    #plt.savefig(os.path.join(sub_directory, plot_name))
+    plt.show()
 
     # Encerra as configurações do gráfico
     plt.close()
@@ -327,142 +337,159 @@ def main():
     #! [Debug] Definição de saída para mostrar as matrizes por completo no console se necessário.
     np.set_printoptions(threshold=np.inf)
     
-    # ########################################
-    # #!       Exercício 01: PSO e GA       !#
-    # ########################################
-    # print(f"{'-'*75}")
-    # print(f"{'Exercício 01':^75}")
-    # print(f"{'-'*75}")
+    ########################################
+    #!       Exercício 01: PSO e GA       !#
+    ########################################
+    print(f"{'-'*75}")
+    print(f"{'Exercício 01':^75}")
+    print(f"{'-'*75}")
     
-    # # Definindo as condições iniciais e comuns do exercício
-    # filename = 'ex1_PSO'
-    # fitness_func = ex01_rosenbrock_func_
-    # is_min = True
-    # bounds=np.array([[-5.0, 5.0], [-5.0, 5.0]])
-    # num_particles = np.random.randint(10, 51)
-    # max_it = max_gen = 10000
-    # max_patience = 100
+    # Definindo consistência dos números aleatórios
+    np.random.seed(42)
     
-    # # Definindo os hiperparâmetros do PSO
-    # VMIN = -5.0
-    # VMAX = 5.0
-    # W = 0.7
-    # AC2 = 2.05
-    # AC1 = 2.05
+    # Definindo as condições iniciais e comuns do exercício
+    filename = 'ex1_PSO'
+    fitness_func = ex01_rosenbrock_func_
+    is_min = True
+    bounds=np.array([[-5.0, 5.0], [-5.0, 5.0]])
+    num_particles = np.random.randint(10, 51)
+    max_it = max_gen = 10000
+    max_patience = 100
     
-    # # Execução do PSO
-    # pso = PSO(
-    #     VMIN=VMIN,
-    #     VMAX=VMAX,
-    #     W=W,
-    #     AC1=AC1,
-    #     AC2=AC2
-    # )
-    # pso.optimize(
-    #     fitness_func=fitness_func,
-    #     is_min=is_min,
-    #     bounds=bounds,
-    #     num_particles=num_particles,
-    #     max_it=max_it,
-    #     max_patience=max_patience
-    # )
+    # Definindo os hiperparâmetros do PSO
+    VMIN = -5.0
+    VMAX = 5.0
+    W = 0.7
+    AC2 = 2.05
+    AC1 = 2.05
+        
+    # Execução do PSO
+    pso = PSO(
+        VMIN=VMIN,
+        VMAX=VMAX,
+        W=W,
+        AC1=AC1,
+        AC2=AC2
+    )
+    pso.optimize(
+        fitness_func=fitness_func,
+        is_min=is_min,
+        bounds=bounds,
+        num_particles=num_particles,
+        max_it=max_it,
+        max_patience=max_patience
+    )
     
-    # # Salvando dados do PSO
-    # plot_pso_experiment(
-    #     filename=filename,
-    #     alg_name_acronym='PSO',
-    #     type_plot='log',
-    #     num_cycle=0,
-    #     num_experiment=0,
-    #     best_values=pso.best_global_fitness,
-    #     mean_values=pso.best_mean_fitness,
-    # )
+    # Salvando dados do PSO
+    plot_pso_experiment(
+        filename=filename,
+        alg_name_acronym='PSO',
+        type_plot='log',
+        num_cycle=0,
+        num_experiment=0,
+        best_values=pso.best_global_fitness,
+        mean_values=pso.best_mean_fitness,
+    )
     
-    # # Definindo os hiperparâmetros do GA
-    # population_size = 30
-    # bitstring_size = np.array([11, 20]) # Float 32 bits (IEEE)
-    # size_tournament = 3
-    # elitism = False
-    # elite_size = 3
-    # crossover_rate = 0.5
-    # mutation_rate = 0.25
+    # Definindo consistência dos números aleatórios
+    np.random.seed(42)
     
-    # # Execução do GA
-    # ga = GA()
-    # ga.generate_population(
-    #     bounds=bounds,
-    #     population_size=population_size,
-    #     bitstring_size=bitstring_size
-    # )
-    # ga.optimize(
-    #     fitness_func=fitness_func,
-    #     is_min=is_min,
-    #     max_gen=max_gen,
-    #     max_patience=max_patience,
-    #     size_tournament=size_tournament,
-    #     elitism=elitism,
-    #     elite_size=elite_size,
-    #     crossover_rate=crossover_rate,
-    #     mutation_rate=mutation_rate
-    # )
+    # Definindo os hiperparâmetros do GA
+    population_size = 30
+    bitstring_size = np.array([11, 20]) # Float 32 bits (IEEE)
+    size_tournament = 3
+    elitism = False
+    elite_size = 3
+    crossover_rate = 0.5
+    mutation_rate = 0.25
+     
+    # Execução do GA
+    ga = GA()
+    ga.generate_population(
+        bounds=bounds,
+        population_size=population_size,
+        bitstring_size=bitstring_size
+    )
+    ga.optimize(
+        fitness_func=fitness_func,
+        is_min=is_min,
+        max_gen=max_gen,
+        max_patience=max_patience,
+        size_tournament=size_tournament,
+        elitism=elitism,
+        elite_size=elite_size,
+        crossover_rate=crossover_rate,
+        mutation_rate=mutation_rate
+    )
     
-    # # Salvando dados do GA
-    # plot_pso_experiment(
-    #     filename=filename,
-    #     alg_name_acronym='GA',
-    #     type_plot='log',
-    #     num_cycle=0,
-    #     num_experiment=0,
-    #     best_values=ga.best_global_fitness,
-    #     mean_values=ga.all_mean_fitness,
-    # )
+    # Salvando dados do GA
+    plot_pso_experiment(
+        filename=filename,
+        alg_name_acronym='GA',
+        type_plot='log',
+        num_cycle=0,
+        num_experiment=0,
+        best_values=ga.best_global_fitness,
+        mean_values=ga.all_mean_fitness,
+    )
     
     
     ########################################
-    #!         Exercício 02: ACO          !#
-    ########################################
-    #*     best_dist(berlin52) = 7542     *#
+    #!       Exercício 02: ACO-TSP        !#
     ########################################
     print(f"{'-'*75}")
     print(f"{'Exercício 02':^75}")
     print(f"{'-'*75}")
+
+    # Definindo consistência dos números aleatórios
+    np.random.seed(42)
     
     # Definindo as condições iniciais do exercício
-    filename = 'ex2_ACO'
+    filename = 'ex2_ACO-TSP'
     
     # Recuperando os dados do arquivo TSP
-    tsp_filename = 'berlin52'
-    tsp_problem, dist_coords = ex02_tsp(tsp_filename=tsp_filename)
+    tsp_filename = 'berlin52' # Optimal Path: 7542
+    tsp_problem, node_coords = ex02_tsp(tsp_filename=tsp_filename)
     
-    # Definindo os hiperparâmetros do ACO
-    
+    # Definindo os hiperparâmetros do ACO-TSP
+    alpha = 1         # Peso da trilha de feromônio (tau)
+    beta = 5          # Peso do desejo heurístico (eta)
+    rho = 0.5         # Taxa de evaporação do feromônio
+    Q = 100           # Quantidade de feromônio depositado por uma formiga
+    elite_ant = 5     # Número de formigas elitistas
+    tau_init = 1e-6   # Trilha de feromônio inicial
+    max_it = 100      # Número máximo de iterações
+    max_patience = 50 # Número máximo para estagnação ('paciência')
 
-    # Execução do ACO
-    
+    # Execução do ACO-TSP
+    aco_tsp = ACO_TSP(
+        alpha=alpha,
+        beta=beta,
+        rho=rho,
+        Q=Q,
+        elite_ant=elite_ant
+    )
+    aco_tsp.optimize(
+        node_coords=node_coords,
+        tau_init=tau_init,
+        max_it=max_it,
+        max_patience=max_patience
+    )
 
-    # # Salvando gráfico das distâncias por iteração
-    # plot_aco_experiment(
-    #     filename=filename,
-    #     tsp_filename=tsp_filename,
-    #     type_exp='itr',
-    #     num_cycle=0,
-    #     num_experiment=0,
-    #     best_dist=None,
-    # )
-    
-    # # Salvando gráfico do menor caminho encontrado
-    # cities_x_coords, cities_y_coords = np.array([coords for coords in tsp_problem.node_coords.values()]).T
-    # plot_aco_experiment(
-    #     filename=filename,
-    #     tsp_filename=tsp_filename,
-    #     type_exp='city',
-    #     num_cycle=0,
-    #     num_experiment=0,
-    #     cities_x_coords=cities_x_coords,
-    #     cities_y_coords=cities_y_coords,
-    #     best_path_x_coords=None,
-    #     best_path_y_coords=None,
-    # )
+    # Salvando os gráficos para o ACO-TSP
+    cities_x_coords, cities_y_coords = node_coords.T
+    best_path_x_coords, best_path_y_coords = node_coords[aco_tsp.best_path_nodes].T
+    plot_aco_experiment(
+        filename=filename,
+        tsp_filename=tsp_filename,
+        num_cycle=0,
+        num_experiment=0,
+        best_dist=aco_tsp.best_path_distance,
+        cities_x_coords=cities_x_coords,
+        cities_y_coords=cities_y_coords,
+        best_path_x_coords=best_path_x_coords,
+        best_path_y_coords=best_path_y_coords,
+    )
     
     
 if __name__ == '__main__':

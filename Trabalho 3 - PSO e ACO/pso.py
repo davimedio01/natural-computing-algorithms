@@ -56,11 +56,11 @@ class PSO:
             Tempo de execução do algoritmo, em segundos. \n
            
     Methods:
-        optimize (fitness_func: callable, is_min: bool, max_gen: int, max_patience: int)
+        optimize (fitness_func: callable, is_min: bool, max_it: int, max_patience: int)
             Aplicação do PSO, a partir dos parâmetros descritos abaixo 
                 fitness_func: função de avaliação de aptidão. Ver exemplo de uso na '__rosenbrock_func__' (padrão: __rosenbrock_func__)
                 is_min: booleana para atribuir algoritmo para min/max (padrão: True)
-                max_gen: número máximo de gerações possíveis (padrão: 10000)
+                max_it: número máximo de iterações possíveis (padrão: 10000)
                 max_patience: número máximo de iterações em que não houve melhora (padrão: 100)
                 
     Notes:
