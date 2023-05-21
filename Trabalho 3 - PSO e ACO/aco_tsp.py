@@ -125,7 +125,9 @@ class ACO_TSP:
             dist_cities[index] = np.sqrt(((node_coords - city) ** 2).sum(axis=1))
 
         # Desejo Heurístico: inverso das distâncias
-        eta = np.divide(1, dist_cities, where=dist_cities!=0)
+        with np.errstate(all='ignore'):
+            eta = (1 / dist_cities)
+        eta[eta == np.inf] = 0
         
         # Feromônios
         tau = np.full((num_ant, num_ant), tau_init)      
@@ -146,6 +148,7 @@ class ACO_TSP:
             ant_paths = []
             ant_paths_distance = []
 
+            #for ant in range(num_ant):
             for ant in ant_city:
                 # Realizando configuração de cidades visitadas e atual
                 visited_city = np.array([False] * num_ant)
@@ -165,13 +168,18 @@ class ACO_TSP:
                     unvisited_city = np.where(np.logical_not(visited_city))[0]
 
                     # Calculando a probabilidade da próxima cidade
-                    prob_next_city = np.zeros(unvisited_city.shape[0])
+                    prob_next_city = np.zeros(unvisited_city.shape[0], dtype=np.float32)
                     for index, next_city in enumerate(unvisited_city):
                         prob_next_city[index] = (tau[current_city, next_city] ** self.alpha) * (eta[current_city, next_city] ** self.beta)
-                    prob_next_city /= np.sum(prob_next_city)
+                    if np.sum(prob_next_city) == 0:
+                        prob_next_city = np.ones_like(prob_next_city) / prob_next_city.shape[0]
+                    else:
+                        prob_next_city /= np.sum(prob_next_city)
+                    
+                    # Obtendo a próxima cidade a ser visitada com base na maior probabilidade
+                    next_city = np.random.choice(unvisited_city, p=prob_next_city)
                     
                     # Atualizando o grafo com a próxima cidade a ser visitada
-                    next_city = np.random.choice(unvisited_city, p=prob_next_city)
                     path.append(next_city)
                     path_distance += dist_cities[current_city, next_city]
                     visited_city[next_city] = True

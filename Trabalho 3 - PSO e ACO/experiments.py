@@ -134,11 +134,8 @@ def plot_pso_experiment(
     if type_plot == 'normal':
         plt.plot(best_values, label='Melhor Aptidão', c='b')
         plt.plot(mean_values, label='Aptidão Média', c='r')
-    elif type_plot == 'log':
-        plt.log(best_values, label='Melhor Aptidão', c='b')
-        plt.log(mean_values, label='Aptidão Média', c='r')
     elif type_plot == 'semilog':
-        plt.semilogx(best_values, label='Melhor Aptidão', c='b')
+        plt.semilogy(best_values, label='Melhor Aptidão', c='b')
         plt.semilogy(mean_values, label='Aptidão Média', c='r')
 
     # Adiciona legenda
@@ -226,8 +223,8 @@ def plot_aco_experiment(
     plt.ylabel('Distância do Menor Caminho', loc='center')
 
     # Plota e salva o gráfico em um arquivo
-    #plt.savefig(os.path.join(sub_directory, plot_name))
-    plt.show()
+    plt.savefig(os.path.join(sub_directory, plot_name))
+    #plt.show()
 
     # Encerra as configurações do gráfico
     plt.close()
@@ -263,8 +260,8 @@ def plot_aco_experiment(
     plt.title(title, loc='center')
     
     # Plota e salva o gráfico em um arquivo
-    #plt.savefig(os.path.join(sub_directory, plot_name))
-    plt.show()
+    plt.savefig(os.path.join(sub_directory, plot_name))
+    #plt.show()
 
     # Encerra as configurações do gráfico
     plt.close()
@@ -353,7 +350,7 @@ def main():
     is_min = True
     bounds=np.array([[-5.0, 5.0], [-5.0, 5.0]])
     num_particles = np.random.randint(10, 51)
-    max_it = max_gen = 10000
+    max_it = max_gen = 1000
     max_patience = 100
     
     # Definindo os hiperparâmetros do PSO
@@ -384,7 +381,7 @@ def main():
     plot_pso_experiment(
         filename=filename,
         alg_name_acronym='PSO',
-        type_plot='log',
+        type_plot='semilog',
         num_cycle=0,
         num_experiment=0,
         best_values=pso.best_global_fitness,
@@ -426,7 +423,7 @@ def main():
     plot_pso_experiment(
         filename=filename,
         alg_name_acronym='GA',
-        type_plot='log',
+        type_plot='semilog',
         num_cycle=0,
         num_experiment=0,
         best_values=ga.best_global_fitness,
@@ -449,17 +446,17 @@ def main():
     
     # Recuperando os dados do arquivo TSP
     tsp_filename = 'berlin52' # Optimal Path: 7542
-    tsp_problem, node_coords = ex02_tsp(tsp_filename=tsp_filename)
+    _, node_coords = ex02_tsp(tsp_filename=tsp_filename)
     
     # Definindo os hiperparâmetros do ACO-TSP
-    alpha = 1         # Peso da trilha de feromônio (tau)
-    beta = 5          # Peso do desejo heurístico (eta)
-    rho = 0.5         # Taxa de evaporação do feromônio
-    Q = 100           # Quantidade de feromônio depositado por uma formiga
-    elite_ant = 5     # Número de formigas elitistas
-    tau_init = 1e-6   # Trilha de feromônio inicial
-    max_it = 100      # Número máximo de iterações
-    max_patience = 50 # Número máximo para estagnação ('paciência')
+    alpha = 1          # Peso da trilha de feromônio (tau)
+    beta = 5           # Peso do desejo heurístico (eta)
+    rho = 0.5          # Taxa de evaporação do feromônio
+    Q = 100            # Quantidade de feromônio depositado por uma formiga
+    elite_ant = 5      # Número de formigas elitistas
+    tau_init = 1e-6    # Trilha de feromônio inicial
+    max_it = 150       # Número máximo de iterações
+    max_patience = 25  # Número máximo para estagnação ('paciência')
 
     # Execução do ACO-TSP
     aco_tsp = ACO_TSP(
