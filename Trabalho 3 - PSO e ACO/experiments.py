@@ -456,7 +456,7 @@ def main():
     elite_ant = 5      # Número de formigas elitistas
     tau_init = 1e-6    # Trilha de feromônio inicial
     max_it = 150       # Número máximo de iterações
-    max_patience = 25  # Número máximo para estagnação ('paciência')
+    max_patience = 10  # Número máximo para estagnação ('paciência')
 
     # Execução do ACO-TSP
     aco_tsp = ACO_TSP(

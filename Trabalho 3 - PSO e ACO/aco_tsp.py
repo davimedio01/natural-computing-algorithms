@@ -160,7 +160,7 @@ class ACO_TSP:
                 # Iniciando as variáveis relativas ao caminho
                 path = [current_city]
                 path_distance = 0.0
-                prev_city = cp(current_city)
+                first_city = cp(current_city) # marcar o primeiro nó para posterior cálculo da distância
                 
                 # Percorrendo o grafo com a formiga atual
                 while np.any(np.logical_not(visited_city)):
@@ -183,11 +183,10 @@ class ACO_TSP:
                     path.append(next_city)
                     path_distance += dist_cities[current_city, next_city]
                     visited_city[next_city] = True
-                    prev_city = cp(current_city)
-                    current_city = cp(next_city)    
+                    current_city = cp(next_city)
                 
                 # Obtendo a distância relativa ao último nó para o primeiro
-                path_distance += dist_cities[prev_city, current_city]
+                path_distance += dist_cities[first_city, current_city]
                 
                 # Avaliando a rota construída por cada formiga
                 if path_distance < best_path_distance:
