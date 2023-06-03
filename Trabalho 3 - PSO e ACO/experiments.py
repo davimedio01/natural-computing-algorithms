@@ -10,7 +10,7 @@ import numpy as np               # Matrizes e Funções Matemáticas
 from copy import copy as cp      # Copiar objetos (não somente a referência)
 import matplotlib.pyplot as plt  # Criação de Gráficos
 
-# Ex02: PSO e GA
+# Ex01: PSO e GA
 from pso import PSO
 from genetic_algorithm import GA
 
@@ -266,6 +266,53 @@ def plot_aco_experiment(
     # Encerra as configurações do gráfico
     plt.close()
 
+# Criar arquivos CSV para dados das tabelas
+def create_csv_table(
+    filename: str,
+    alg_name_acronym: str,
+    type_exp: str,
+    rows: list,
+):
+    """Escreve os experimentos em um arquivo CSV para futuras tabelas do relatório.
+
+    Args:
+        filename : str 
+            Nome do arquivo/exercicio (ex: 'ex01') \n
+        alg_name_acronym : str
+            Nome ou sigla do algoritmo executado (ex: 'PSO', 'GA' ou 'ACO-TSP') \n
+        type_exp (str): tipo da tabela (ex: 'acerto')
+            -> Utilize: 
+        rows : list [[dados, ...], ...] 
+            Lista com os dados das linhas no total (ex: [['10', '0.1'], ['20', '0.2']) \n
+        
+    Notes:
+        Cria um arquivo csv da tabela com o seguinte nome: {alg_name_acronym}_{type_exp}.csv \n
+        Salva em um subdiretório da pasta local do código com o nome: {filename} \n
+    """
+    
+    # Defininido o sub-diretório dos dados
+    import os
+    actual_dir = os.path.dirname(__file__)
+    sub_directory = os.path.join(actual_dir, f'{filename}/')
+    os.makedirs(sub_directory, exist_ok=True)
+
+    # Definindo o nome do arquivo
+    table_name = f'{alg_name_acronym}_{type_exp}.csv'
+    
+    # Definindo o título da tabela com base no tipo de algoritmo
+    if alg_name_acronym == 'PSO':
+        table_title = 'Num. Partículas,V.Min,V.Máx'
+    elif alg_name_acronym == 'GA':
+        table_title = 'Tam. da População,Taxa de Crossover,Taxa de Mutação'
+    elif alg_name_acronym == 'ACO-TSP':
+        table_title = 'Alfa,Beta'
+    table_title += ',Média,Desvio Padrão,Mínimo,Mediana,Máximo'
+
+    # Salvando o arquivo CSV
+    np.savetxt(fname=os.path.join(sub_directory, table_name), X=rows, fmt='%.4f', header=table_title,
+               delimiter=',', comments='', encoding='UTF-8')
+
+
 # Criar arquivos texto para dados do melhor experimento
 def create_txt_best(
     filename: str,
@@ -334,6 +381,10 @@ def main():
     #! [Debug] Definição de saída para mostrar as matrizes por completo no console se necessário.
     np.set_printoptions(threshold=np.inf)
     
+    # Definindo condições gerais de todos os exercícios
+    max_cycle = 4
+    max_exp_per_cycle = 25
+    
     ########################################
     #!       Exercício 01: PSO e GA       !#
     ########################################
@@ -349,85 +400,315 @@ def main():
     fitness_func = ex01_rosenbrock_func_
     is_min = True
     bounds=np.array([[-5.0, 5.0], [-5.0, 5.0]])
-    num_particles = np.random.randint(10, 51)
+    num_particles = np.random.randint(10, 51) # Um tamanho de particula, aleatório, para todos os experimentos
     max_it = max_gen = 1000
     max_patience = 100
     
+    #!###########################################################
+    #! PSO
+    #!###########################################################
     # Definindo os hiperparâmetros do PSO
-    VMIN = -5.0
-    VMAX = 5.0
+    VMIN = np.array([-5.0, -2.5, -10.0, -1.0])
+    VMAX = np.array([5.0, 2.5, 10.0, 1.0])
     W = 0.7
     AC2 = 2.05
     AC1 = 2.05
-        
-    # Execução do PSO
-    pso = PSO(
-        VMIN=VMIN,
-        VMAX=VMAX,
-        W=W,
-        AC1=AC1,
-        AC2=AC2
-    )
-    pso.optimize(
-        fitness_func=fitness_func,
-        is_min=is_min,
-        bounds=bounds,
-        num_particles=num_particles,
-        max_it=max_it,
-        max_patience=max_patience
-    )
     
-    # Salvando dados do PSO
+    #!###########################################################
+    #! Ciclos de Execução!
+    #!###########################################################
+    # Variáveis para salvar o gráfico de convergência do melhor algoritmo executado
+    best_global_pso = None       # Relativo a todos os ciclos
+    best_global_fitness = np.inf # Melhor aptidão obtida
+    best_cycle = 0               # Melhor ciclo de execução
+    
+    # Variáveis para dados das tabelas
+    cycle_fitness = []    # Aptidões
+    cycle_itr = []        # Iterações/Gerações
+    cycle_exec_time = []  # Tempo de Execução
+    
+    for cycle in range(max_cycle):
+        print(f"{'-'*75}")
+        print(f"{'Ciclo %d' % (cycle+1):^75}")
+        print(f"{'-'*75}")
+        
+        #!###########################################################
+        #! Experimentos
+        #!###########################################################
+        
+        # Definindo os mesmos números aleatórios para NumPy durante a execução do código
+        np.random.seed(42)
+        
+        # Variáveis auxiliares para salvar o melhor local (a cada 25 exp.)
+        best_local_pso = None       # Relativo a cada ciclo
+        best_local_fitness = np.inf # Melhor aptidão do conj. exp.
+        best_num_exp = -1           # Número do melhor experimento
+        
+        # Variáveis para salvar os dados de cada experimento (linhas das tabelas)
+        experiment_fitness = []     # Valor de aptidão
+        experiment_itr = []         # Iterações/Gerações
+        experiment_exec_time = []   # Tempo de Execução
+
+        for num_experiment in range(max_exp_per_cycle):        
+            # Execução do PSO
+            pso = PSO(
+                VMIN=VMIN[cycle],
+                VMAX=VMAX[cycle],
+                W=W,
+                AC1=AC1,
+                AC2=AC2
+            )
+            pso.optimize(
+                fitness_func=fitness_func,
+                is_min=is_min,
+                bounds=bounds,
+                num_particles=num_particles,
+                max_it=max_it,
+                max_patience=max_patience
+            )
+            
+            # Salvando o melhor PSO local (por ciclo)
+            if (is_min and pso.best_global_fitness[-1] < best_local_fitness) or (not is_min and pso.best_global_fitness[-1] > best_local_fitness):
+                best_local_pso = cp(pso)
+                best_local_fitness = cp(pso.best_global_fitness[-1])
+                best_num_exp = cp(num_experiment)
+
+            # Salvando dados para as tabelas
+            experiment_fitness.append(pso.best_global_fitness[-1])
+            experiment_itr.append(pso.itr)
+            experiment_exec_time.append(pso.exec_time)
+            
+            print(f"{'-'*50}") 
+        
+        # Salvando o melhor PSO global (de todos os ciclos)
+        if (is_min and best_local_fitness < best_global_fitness) or (not is_min and best_local_fitness > best_global_fitness):
+            best_global_pso = cp(best_local_pso)
+            best_global_fitness = cp(best_local_fitness)
+            best_cycle = cp(cycle)
+            
+        # Salvando dados do ciclo para tabela
+        cycle_fitness.append([  # Aptidão
+            num_particles, # Número de Partículas
+            VMIN[cycle],   # Velocidade Mínima
+            VMAX[cycle],   # Velocidade Máxima
+            np.mean(experiment_fitness), # Média
+            np.std(experiment_fitness), # Desvio Padrão
+            np.min(experiment_fitness), # Mínimo
+            np.median(experiment_fitness), # Mediana
+            np.max(experiment_fitness), # Máximo
+        ])
+        
+        cycle_itr.append([  # Iterações/Gerações
+            num_particles, # Número de Partículas
+            VMIN[cycle],   # Velocidade Mínima
+            VMAX[cycle],   # Velocidade Máxima
+            np.mean(experiment_itr), # Média
+            np.std(experiment_itr), # Desvio Padrão
+            np.min(experiment_itr), # Mínimo
+            np.median(experiment_itr), # Mediana
+            np.max(experiment_itr),  # Máximo
+        ])
+        
+        cycle_exec_time.append([  # Tempo de Execução
+            num_particles,  # Número de Partículas
+            VMIN[cycle],   # Velocidade Mínima
+            VMAX[cycle],   # Velocidade Máxima
+            np.mean(experiment_exec_time),  # Média
+            np.std(experiment_exec_time),  # Desvio Padrão
+            np.min(experiment_exec_time),  # Mínimo
+            np.median(experiment_exec_time),  # Mediana
+            np.max(experiment_exec_time),  # Máximo
+        ])
+        
+        print(f"{'-'*75}")
+        print(f"{'Fim do Ciclo %d' % (cycle+1):^75}")
+        print(f"{'-'*75}\n")
+    
+    # Salvando os dados gráficos
     plot_pso_experiment(
         filename=filename,
         alg_name_acronym='PSO',
         type_plot='semilog',
-        num_cycle=0,
-        num_experiment=0,
-        best_values=pso.best_global_fitness,
-        mean_values=pso.best_mean_fitness,
+        num_cycle=best_cycle+1,
+        num_experiment=best_num_exp+1,
+        best_values=best_global_pso.best_global_fitness,
+        mean_values=best_global_pso.best_mean_fitness,
     )
     
-    # Definindo consistência dos números aleatórios
-    np.random.seed(42)
+    # Salvando os dados das tabelas
+    create_csv_table(  # Aptidão
+        filename=filename,
+        alg_name_acronym='PSO',
+        type_exp='aptidao',
+        rows=cycle_fitness,
+    )
+    create_csv_table(  # Iterações/Gerações
+        filename=filename,
+        alg_name_acronym='PSO',
+        type_exp='iteracao',
+        rows=cycle_itr,
+    )
+    create_csv_table(  # Aptidão
+        filename=filename,
+        alg_name_acronym='PSO',
+        type_exp='tempo',
+        rows=cycle_exec_time,
+    )
     
+    
+    #!###########################################################
+    #! GA
+    #!###########################################################
     # Definindo os hiperparâmetros do GA
     population_size = 30
     bitstring_size = np.array([11, 20]) # Float 32 bits (IEEE)
     size_tournament = 3
     elitism = False
     elite_size = 3
-    crossover_rate = 0.5
-    mutation_rate = 0.25
-     
-    # Execução do GA
-    ga = GA()
-    ga.generate_population(
-        bounds=bounds,
-        population_size=population_size,
-        bitstring_size=bitstring_size
-    )
-    ga.optimize(
-        fitness_func=fitness_func,
-        is_min=is_min,
-        max_gen=max_gen,
-        max_patience=max_patience,
-        size_tournament=size_tournament,
-        elitism=elitism,
-        elite_size=elite_size,
-        crossover_rate=crossover_rate,
-        mutation_rate=mutation_rate
-    )
+    crossover_rate = np.array([0.5, 0.6, 0.7, 0.8])
+    mutation_rate = np.array([0.1, 0.2, 0.3, 0.4])
     
-    # Salvando dados do GA
+    #!###########################################################
+    #! Ciclos de Execução!
+    #!###########################################################
+    # Variáveis para salvar o gráfico de convergência do melhor algoritmo executado
+    best_global_ga = None        # Relativo a todos os ciclos
+    best_global_fitness = np.inf # Melhor aptidão obtida
+    best_cycle = 0               # Melhor ciclo de execução
+
+    # Variáveis para dados das tabelas
+    cycle_fitness = []    # Aptidões
+    cycle_itr = []        # Iterações/Gerações
+    cycle_exec_time = []  # Tempo de Execução
+
+    for cycle in range(max_cycle):
+        print(f"{'-'*75}")
+        print(f"{'Ciclo %d' % (cycle+1):^75}")
+        print(f"{'-'*75}")
+
+        #!###########################################################
+        #! Experimentos
+        #!###########################################################
+
+        # Definindo os mesmos números aleatórios para NumPy durante a execução do código
+        np.random.seed(42)
+
+        # Variáveis auxiliares para salvar o melhor local (a cada 25 exp.)
+        best_local_ga = None        # Relativo a cada ciclo
+        best_local_fitness = np.inf # Melhor aptidão do conj. exp.
+        best_num_exp = -1           # Número do melhor experimento
+
+        # Variáveis para salvar os dados de cada experimento (linhas das tabelas)
+        experiment_fitness = []     # Valor de aptidão
+        experiment_itr = []         # Iterações/Gerações
+        experiment_exec_time = []   # Tempo de Execução
+
+        for num_experiment in range(max_exp_per_cycle):
+            # Execução do GA
+            ga = GA()
+            ga.generate_population(
+                bounds=bounds,
+                population_size=population_size,
+                bitstring_size=bitstring_size,
+            )
+            ga.optimize(
+                fitness_func=fitness_func,
+                is_min=is_min,
+                max_gen=max_gen,
+                max_patience=max_patience,
+                size_tournament=size_tournament,
+                elitism=elitism,
+                elite_size=elite_size,
+                crossover_rate=crossover_rate[cycle],
+                mutation_rate=mutation_rate[cycle],
+            )
+
+            # Salvando o melhor GA local (por ciclo)
+            if (is_min and ga.best_global_fitness[-1] < best_local_fitness) or (not is_min and ga.best_global_fitness[-1] > best_local_fitness):
+                best_local_ga = cp(ga)
+                best_local_fitness = cp(ga.best_global_fitness[-1])
+                best_num_exp = cp(num_experiment)
+
+            # Salvando dados para as tabelas
+            experiment_fitness.append(ga.best_global_fitness[-1])
+            experiment_itr.append(ga.best_generation)
+            experiment_exec_time.append(ga.exec_time)
+
+            print(f"{'-'*50}")
+
+        # Salvando o melhor PSO global (de todos os ciclos)
+        if (is_min and best_local_fitness < best_global_fitness) or (not is_min and best_local_fitness > best_global_fitness):
+            best_global_ga = cp(best_local_ga)
+            best_global_fitness = cp(best_local_fitness)
+            best_cycle = cp(cycle)
+
+        # Salvando dados do ciclo para tabela
+        cycle_fitness.append([  # Aptidão
+            population_size, # Tam. da População
+            crossover_rate[cycle], # Taxa de Crossover
+            mutation_rate[cycle], # Taxa de Mutação
+            np.mean(experiment_fitness),  # Média
+            np.std(experiment_fitness),  # Desvio Padrão
+            np.min(experiment_fitness),  # Mínimo
+            np.median(experiment_fitness),  # Mediana
+            np.max(experiment_fitness),  # Máximo
+        ])
+
+        cycle_itr.append([  # Iterações/Gerações
+            population_size,  # Tam. da População
+            crossover_rate[cycle],  # Taxa de Crossover
+            mutation_rate[cycle],  # Taxa de Mutação
+            np.mean(experiment_itr),  # Média
+            np.std(experiment_itr),  # Desvio Padrão
+            np.min(experiment_itr),  # Mínimo
+            np.median(experiment_itr),  # Mediana
+            np.max(experiment_itr),  # Máximo
+        ])
+
+        cycle_exec_time.append([  # Tempo de Execução
+            population_size,  # Tam. da População
+            crossover_rate[cycle],  # Taxa de Crossover
+            mutation_rate[cycle],  # Taxa de Mutação
+            np.mean(experiment_exec_time),  # Média
+            np.std(experiment_exec_time),  # Desvio Padrão
+            np.min(experiment_exec_time),  # Mínimo
+            np.median(experiment_exec_time),  # Mediana
+            np.max(experiment_exec_time),  # Máximo
+        ])
+
+        print(f"{'-'*75}")
+        print(f"{'Fim do Ciclo %d' % (cycle+1):^75}")
+        print(f"{'-'*75}\n")
+
+    # Salvando os dados gráficos
     plot_pso_experiment(
         filename=filename,
         alg_name_acronym='GA',
         type_plot='semilog',
-        num_cycle=0,
-        num_experiment=0,
-        best_values=ga.best_global_fitness,
-        mean_values=ga.all_mean_fitness,
+        num_cycle=best_cycle+1,
+        num_experiment=best_num_exp+1,
+        best_values=best_global_ga.best_global_fitness,
+        mean_values=best_global_ga.all_mean_fitness,
+    )
+
+    # Salvando os dados das tabelas
+    create_csv_table(  # Aptidão
+        filename=filename,
+        alg_name_acronym='GA',
+        type_exp='aptidao',
+        rows=cycle_fitness,
+    )
+    create_csv_table(  # Iterações/Gerações
+        filename=filename,
+        alg_name_acronym='GA',
+        type_exp='iteracao',
+        rows=cycle_itr,
+    )
+    create_csv_table(  # Aptidão
+        filename=filename,
+        alg_name_acronym='GA',
+        type_exp='tempo',
+        rows=cycle_exec_time,
     )
     
     
@@ -449,8 +730,8 @@ def main():
     _, node_coords = ex02_tsp(tsp_filename=tsp_filename)
     
     # Definindo os hiperparâmetros do ACO-TSP
-    alpha = 1          # Peso da trilha de feromônio (tau)
-    beta = 5           # Peso do desejo heurístico (eta)
+    alpha = np.array([1.0, 5.0, 2.0, 2.0]) # Peso da trilha de feromônio (tau)
+    beta = np.array([5.0, 1.0, 2.0, 5.0])  # Peso do desejo heurístico (eta)
     rho = 0.5          # Taxa de evaporação do feromônio
     Q = 100            # Quantidade de feromônio depositado por uma formiga
     elite_ant = 5      # Número de formigas elitistas
@@ -458,35 +739,146 @@ def main():
     max_it = 150       # Número máximo de iterações
     max_patience = 10  # Número máximo para estagnação ('paciência')
 
-    # Execução do ACO-TSP
-    aco_tsp = ACO_TSP(
-        alpha=alpha,
-        beta=beta,
-        rho=rho,
-        Q=Q,
-        elite_ant=elite_ant
-    )
-    aco_tsp.optimize(
-        node_coords=node_coords,
-        tau_init=tau_init,
-        max_it=max_it,
-        max_patience=max_patience
-    )
+    #!###########################################################
+    #! Ciclos de Execução!
+    #!###########################################################
+    # Variáveis para salvar o gráfico de convergência do melhor algoritmo executado
+    best_global_aco_tsp = None       # Relativo a todos os ciclos
+    best_global_path_dist = np.inf # Melhor distância obtida
+    best_cycle = 0               # Melhor ciclo de execução
 
-    # Salvando os gráficos para o ACO-TSP
+    # Variáveis para dados das tabelas
+    cycle_fitness = []    # Aptidões
+    cycle_itr = []        # Iterações/Gerações
+    cycle_exec_time = []  # Tempo de Execução
+
+    for cycle in range(max_cycle):
+        print(f"{'-'*75}")
+        print(f"{'Ciclo %d' % (cycle+1):^75}")
+        print(f"{'-'*75}")
+
+        #!###########################################################
+        #! Experimentos
+        #!###########################################################
+
+        # Definindo os mesmos números aleatórios para NumPy durante a execução do código
+        np.random.seed(42)
+
+        # Variáveis auxiliares para salvar o melhor local (a cada 25 exp.)
+        best_local_aco_tsp = None       # Relativo a cada ciclo
+        best_local_path_dist = np.inf # Melhor distância do conj. exp.
+        best_num_exp = -1           # Número do melhor experimento
+
+        # Variáveis para salvar os dados de cada experimento (linhas das tabelas)
+        experiment_fitness = []     # Valor de aptidão
+        experiment_itr = []         # Iterações/Gerações
+        experiment_exec_time = []   # Tempo de Execução
+
+        for num_experiment in range(max_exp_per_cycle):
+            # Execução do ACO-TSP
+            aco_tsp = ACO_TSP(
+                alpha=alpha[cycle],
+                beta=beta[cycle],
+                rho=rho,
+                Q=Q,
+                elite_ant=elite_ant
+            )
+            aco_tsp.optimize(
+                node_coords=node_coords,
+                tau_init=tau_init,
+                max_it=max_it,
+                max_patience=max_patience
+            )
+
+            # Salvando o melhor ACO-TSP local (por ciclo)
+            if aco_tsp.best_path_distance[-1] < best_local_path_dist:
+                best_local_aco_tsp = cp(aco_tsp)
+                best_local_path_dist = cp(aco_tsp.best_path_distance[-1])
+                best_num_exp = cp(num_experiment)
+
+            # Salvando dados para as tabelas
+            experiment_fitness.append(aco_tsp.best_path_distance[-1])
+            experiment_itr.append(aco_tsp.itr)
+            experiment_exec_time.append(aco_tsp.exec_time)
+
+            print(f"{'-'*50}")
+
+        # Salvando o melhor ACO-TSP global (de todos os ciclos)
+        if best_local_path_dist < best_global_path_dist:
+            best_global_aco_tsp = cp(best_local_aco_tsp)
+            best_global_path_dist = cp(best_local_path_dist)
+            best_cycle = cp(cycle)
+
+        # Salvando dados do ciclo para tabela
+        cycle_fitness.append([  # Aptidão
+            alpha[cycle],  # Alfa
+            beta[cycle],  # Beta
+            np.mean(experiment_fitness),  # Média
+            np.std(experiment_fitness),  # Desvio Padrão
+            np.min(experiment_fitness),  # Mínimo
+            np.median(experiment_fitness),  # Mediana
+            np.max(experiment_fitness),  # Máximo
+        ])
+
+        cycle_itr.append([  # Iterações/Gerações
+            alpha[cycle],  # Alfa
+            beta[cycle],  # Beta
+            np.mean(experiment_itr),  # Média
+            np.std(experiment_itr),  # Desvio Padrão
+            np.min(experiment_itr),  # Mínimo
+            np.median(experiment_itr),  # Mediana
+            np.max(experiment_itr),  # Máximo
+        ])
+
+        cycle_exec_time.append([  # Tempo de Execução
+            alpha[cycle], # Alfa
+            beta[cycle], # Beta
+            np.mean(experiment_exec_time),  # Média
+            np.std(experiment_exec_time),  # Desvio Padrão
+            np.min(experiment_exec_time),  # Mínimo
+            np.median(experiment_exec_time),  # Mediana
+            np.max(experiment_exec_time),  # Máximo
+        ])
+
+        print(f"{'-'*75}")
+        print(f"{'Fim do Ciclo %d' % (cycle+1):^75}")
+        print(f"{'-'*75}\n")
+
+    # Salvando os dados gráficos
     cities_x_coords, cities_y_coords = node_coords.T
-    best_path_x_coords, best_path_y_coords = node_coords[aco_tsp.best_path_nodes].T
+    best_path_x_coords, best_path_y_coords = node_coords[best_global_aco_tsp.best_path_nodes].T
     plot_aco_experiment(
         filename=filename,
         tsp_filename=tsp_filename,
-        num_cycle=0,
-        num_experiment=0,
-        best_dist=aco_tsp.best_path_distance,
+        num_cycle=best_cycle+1,
+        num_experiment=best_num_exp+1,
+        best_dist=best_global_aco_tsp.best_path_distance,
         cities_x_coords=cities_x_coords,
         cities_y_coords=cities_y_coords,
         best_path_x_coords=best_path_x_coords,
         best_path_y_coords=best_path_y_coords,
     )
+
+    # Salvando os dados das tabelas
+    create_csv_table(  # Aptidão
+        filename=filename,
+        alg_name_acronym='ACO-TSP',
+        type_exp='aptidao',
+        rows=cycle_fitness,
+    )
+    create_csv_table(  # Iterações/Gerações
+        filename=filename,
+        alg_name_acronym='ACO-TSP',
+        type_exp='iteracao',
+        rows=cycle_itr,
+    )
+    create_csv_table(  # Aptidão
+        filename=filename,
+        alg_name_acronym='ACO-TSP',
+        type_exp='tempo',
+        rows=cycle_exec_time,
+    )
+    
     
     
 if __name__ == '__main__':
