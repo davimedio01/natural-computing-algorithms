@@ -6,8 +6,8 @@ Aluno: Davi Augusto Neves Leite
 RA: CCO230111
 """
 
-import numpy as np               # Matrizes e Funções Matemáticas
-from copy import copy as cp      # Copiar objetos (não somente a referência)
+import numpy as np          # Matrizes e Funções Matemáticas
+from copy import copy as cp # Copiar objetos (não somente a referência)
 from time import time       # Biblioteca para capturar o tempo de execução
 
 
